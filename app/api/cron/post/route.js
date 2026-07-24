@@ -23,6 +23,9 @@ export async function GET(request) {
       return Response.json({ ok: true, message: "Queue is empty" });
     }
     const post = queue[0];
+    if (!post.fields["Image URL"]) {
+      return Response.json({ error: `Record ${post.id} has no Image URL, skipping.` }, { status: 400 });
+    }
     const token = process.env.IG_ACCESS_TOKEN;
     const igUserId = process.env.IG_USER_ID;
 
