@@ -3,28 +3,26 @@
 import { useState, useEffect } from "react";
 
 export default function DashboardClient() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState({ queue: [], winners: [], posted: [] });
+  const [loading, setLoading] = useState(false);
   const [triggering, setTriggering] = useState({});
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState("Airtable not configured yet. Add API credentials to Vercel to view live data.");
 
   // Fetch dashboard data
-  const fetchData = async () => {
-    try {
-      const res = await fetch("/api/dashboard/data");
-      if (!res.ok) throw new Error("Failed to fetch data");
-      const result = await res.json();
-      setData(result);
-      setLoading(false);
-    } catch (err) {
-      console.error("Fetch error:", err);
-      setMessage("Error loading dashboard data");
-      setLoading(false);
-    }
-  };
-
-  // Auto-refresh every 10 seconds
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch("/api/dashboard/data");
+        const result = await res.json();
+        if (!result.error) {
+          setData(result);
+          setMessage("");
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+      }
+    };
+
     fetchData();
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
@@ -39,7 +37,12 @@ export default function DashboardClient() {
       const result = await res.json();
       if (result.success) {
         setMessage(`✓ ${cronName} triggered successfully`);
-        setTimeout(() => fetchData(), 1000);
+        setTimeout(() => {
+          // Refresh data after trigger
+          fetch("/api/dashboard/data").then((r) => r.json()).then((d) => {
+            if (!d.error) setData(d);
+          });
+        }, 1000);
       } else {
         setMessage(`✗ ${cronName} failed: ${result.error}`);
       }
@@ -48,17 +51,6 @@ export default function DashboardClient() {
     }
     setTriggering((prev) => ({ ...prev, [cronName]: false }));
   };
-
-  if (loading) {
-    return (
-      <div className="dashboard">
-        <div className="loading">
-          <div className="spinner"></div>
-          <p>Loading dashboard...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="dashboard">
@@ -73,9 +65,9 @@ export default function DashboardClient() {
             padding: "1rem",
             borderRadius: "8px",
             marginBottom: "1rem",
-            background: message.startsWith("✓") ? "#dcfce7" : "#fee2e2",
-            color: message.startsWith("✓") ? "#166534" : "#991b1b",
-            border: `1px solid ${message.startsWith("✓") ? "#86efac" : "#fca5a5"}`,
+            background: message.includes("✓") ? "#dcfce7" : message.includes("✗") ? "#fee2e2" : "#fef3c7",
+            color: message.includes("✓") ? "#166534" : message.includes("✗") ? "#991b1b" : "#92400e",
+            border: `1px solid ${message.includes("✓") ? "#86efac" : message.includes("✗") ? "#fca5a5" : "#fcd34d"}`,
           }}
         >
           {message}
@@ -107,7 +99,7 @@ export default function DashboardClient() {
         <button
           className="control-btn"
           style={{ background: "#10b981", color: "white" }}
-          onClick={fetchData}
+          onClick={() => fetch("/api/dashboard/data").then((r) => r.json()).then((d) => { if (!d.error) setData(d); })}
           disabled={loading}
         >
           🔄 Refresh Data
@@ -207,27 +199,33 @@ export default function DashboardClient() {
 
       {/* Setup Instructions */}
       <div className="setup-section">
-        <h3>🔧 Setup Required: Instagram Credentials</h3>
+        <h3>🔧 Setup Required: Environment Variables</h3>
         <p>
-          To enable automatic Instagram posting, add these environment variables to your Vercel project:
+          To get this system fully operational, add these environment variables to your Vercel project settings:
         </p>
         <ul style={{ marginLeft: "2rem", marginBottom: "1rem" }}>
-          <li><code>IG_ACCESS_TOKEN</code> - Long-lived Instagram API access token</li>
-          <li><code>IG_USER_ID</code> - Your Instagram Business account ID</li>
+          <li><code>AIRTABLE_API_KEY</code> - Already configured ✓</li>
+          <li><code>AIRTABLE_BASE_ID</code> - Already configured ✓</li>
+          <li><code>ANTHROPIC_API_KEY</code> - Already configured ✓</li>
+          <li><code>GEMINI_API_KEY</code> - Already configured ✓</li>
+          <li><code>APIFY_TOKEN</code> - Already configured ✓</li>
+          <li><code>APIFY_TASK_ID</code> - Already configured ✓</li>
+          <li><code>CRON_SECRET</code> - Already configured ✓</li>
+          <li><code>IG_ACCESS_TOKEN</code> - ⚠️ Still needed (Instagram API token)</li>
+          <li><code>IG_USER_ID</code> - ⚠️ Still needed (Instagram Business Account ID)</li>
         </ul>
         <p>
-          <strong>Steps:</strong>
+          <strong>Next Steps:</strong>
         </p>
         <ol style={{ marginLeft: "2rem", marginBottom: "1rem" }}>
-          <li>Go to <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer">Meta Developers</a></li>
-          <li>Create a new app (or use existing) and set up Instagram Basic Display + Graph API</li>
-          <li>Generate a long-lived access token for your Business Account</li>
-          <li>Find your Instagram Business Account ID (usually the number in Instagram URLs)</li>
-          <li>Add both to Vercel project settings → Environment Variables</li>
+          <li>Follow the <code>SETUP.md</code> guide in the repo for Instagram credential setup</li>
+          <li>Add <code>IG_ACCESS_TOKEN</code> and <code>IG_USER_ID</code> to Vercel settings</li>
           <li>Redeploy the project</li>
+          <li>The crons will run on schedule (Research: Mondays 9 AM UTC, Generate: Daily 12 PM UTC, Post: Daily 3 PM UTC)</li>
+          <li>Use the dashboard buttons above to manually trigger any cron at any time</li>
         </ol>
         <p>
-          Once set, the Post cron will automatically publish from the Queue daily at 3:00 PM UTC.
+          Once Instagram credentials are added, posts will automatically publish to your Instagram Business Account!
         </p>
       </div>
     </div>
