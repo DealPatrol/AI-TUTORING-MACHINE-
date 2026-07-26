@@ -6,7 +6,7 @@ import { checkCronAuth, airtableList, airtableUpdate } from "@/lib/helpers";
 
 export const maxDuration = 60;
 
-const GRAPH = "https://graph.facebook.com/v21.0";
+const GRAPH = "https://graph.instagram.com/v21.0";
 
 export async function GET(request) {
   if (!checkCronAuth(request)) {
