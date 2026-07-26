@@ -42,7 +42,29 @@ export async function GET(request) {
     const container = await containerRes.json();
     if (!container.id) throw new Error(`Container failed: ${JSON.stringify(container)}`);
 
-    // 3. Publish it
+    // 3. Wait for Instagram to finish processing the image.
+    //    Publishing too early returns "Media ID is not available".
+    let ready = false;
+    for (let attempt = 0; attempt < 15; attempt++) {
+      const statusRes = await fetch(
+        `${GRAPH}/${container.id}?fields=status_code&access_token=${token}`
+      );
+      const status = await statusRes.json();
+
+      if (status.status_code === "FINISHED") {
+        ready = true;
+        break;
+      }
+      if (status.status_code === "ERROR" || status.status_code === "EXPIRED") {
+        throw new Error(`Container processing failed: ${JSON.stringify(status)}`);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+    if (!ready) {
+      throw new Error("Container did not finish processing within 30 seconds");
+    }
+
+    // 4. Publish it
     const publishRes = await fetch(`${GRAPH}/${igUserId}/media_publish`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -54,7 +76,7 @@ export async function GET(request) {
     const published = await publishRes.json();
     if (!published.id) throw new Error(`Publish failed: ${JSON.stringify(published)}`);
 
-    // 4. Mark it posted
+    // 5. Mark it posted
     await airtableUpdate("Queue", post.id, {
       Status: "Posted",
       "Posted At": new Date().toISOString(),
