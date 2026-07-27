@@ -10,9 +10,12 @@ export async function POST(request) {
     });
 
     const data = await cron.json();
+    // Reflect the cron's real outcome so failures aren't hidden
+    const ok = cron.ok && data.ok !== false && !data.error;
     return NextResponse.json({
-      success: true,
-      message: "Post cron triggered",
+      success: ok,
+      message: ok ? (data.message || "Posted to Instagram") : "Post failed",
+      error: ok ? undefined : data.error || `HTTP ${cron.status}`,
       data,
     });
   } catch (error) {

@@ -10,9 +10,11 @@ export async function POST(request) {
     });
 
     const data = await cron.json();
+    const ok = cron.ok && data.ok !== false && !data.error;
     return NextResponse.json({
-      success: true,
-      message: "Generate cron triggered",
+      success: ok,
+      message: ok ? (data.message || "Generate complete") : "Generate failed",
+      error: ok ? undefined : data.error || `HTTP ${cron.status}`,
       data,
     });
   } catch (error) {

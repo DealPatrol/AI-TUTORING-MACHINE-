@@ -197,35 +197,35 @@ export default function DashboardClient() {
         </div>
       </div>
 
-      {/* Setup Instructions */}
+      {/* System Status */}
       <div className="setup-section">
-        <h3>🔧 Setup Required: Environment Variables</h3>
+        <h3>✅ System Live — All Systems Configured</h3>
         <p>
-          To get this system fully operational, add these environment variables to your Vercel project settings:
+          Connected to Instagram <strong>@unlocking__ai</strong>. Every credential is set and the
+          automated pipeline is running.
         </p>
         <ul style={{ marginLeft: "2rem", marginBottom: "1rem" }}>
-          <li><code>AIRTABLE_API_KEY</code> - Already configured ✓</li>
-          <li><code>AIRTABLE_BASE_ID</code> - Already configured ✓</li>
-          <li><code>ANTHROPIC_API_KEY</code> - Already configured ✓</li>
-          <li><code>GEMINI_API_KEY</code> - Already configured ✓</li>
-          <li><code>APIFY_TOKEN</code> - Already configured ✓</li>
-          <li><code>APIFY_TASK_ID</code> - Already configured ✓</li>
-          <li><code>CRON_SECRET</code> - Already configured ✓</li>
-          <li><code>IG_ACCESS_TOKEN</code> - ⚠️ Still needed (Instagram API token)</li>
-          <li><code>IG_USER_ID</code> - ⚠️ Still needed (Instagram Business Account ID)</li>
+          <li><code>AIRTABLE_API_KEY</code> - Configured ✓</li>
+          <li><code>AIRTABLE_BASE_ID</code> - Configured ✓</li>
+          <li><code>ANTHROPIC_API_KEY</code> - Configured ✓</li>
+          <li><code>GEMINI_API_KEY</code> - Configured ✓</li>
+          <li><code>APIFY_TOKEN</code> - Configured ✓</li>
+          <li><code>APIFY_TASK_ID</code> - Configured ✓</li>
+          <li><code>CRON_SECRET</code> - Configured ✓</li>
+          <li><code>IG_ACCESS_TOKEN</code> - Configured ✓</li>
+          <li><code>IG_USER_ID</code> - Configured ✓</li>
         </ul>
         <p>
-          <strong>Next Steps:</strong>
+          <strong>Automated schedule:</strong>
         </p>
         <ol style={{ marginLeft: "2rem", marginBottom: "1rem" }}>
-          <li>Follow the <code>SETUP.md</code> guide in the repo for Instagram credential setup</li>
-          <li>Add <code>IG_ACCESS_TOKEN</code> and <code>IG_USER_ID</code> to Vercel settings</li>
-          <li>Redeploy the project</li>
-          <li>The crons will run on schedule (Research: Mondays 9 AM UTC, Generate: Daily 12 PM UTC, Post: Daily 3 PM UTC)</li>
-          <li>Use the dashboard buttons above to manually trigger any cron at any time</li>
+          <li><strong>Research</strong> — Mondays 9 AM UTC: finds high-performing posts (500+ likes)</li>
+          <li><strong>Generate</strong> — Daily 12 PM UTC: rewrites copy + designs graphics</li>
+          <li><strong>Post</strong> — Daily 3 PM UTC: publishes the next Ready post to Instagram</li>
         </ol>
         <p>
-          Once Instagram credentials are added, posts will automatically publish to your Instagram Business Account!
+          Use the buttons above to trigger any step manually. The <strong>Trigger Post</strong> button
+          publishes the next queued post to your live Instagram account immediately.
         </p>
       </div>
     </div>

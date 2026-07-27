@@ -1,12 +1,15 @@
 // SKILL 04 — THE POSTER (runs daily)
 // Publishes the next "Ready" post from the Queue to Instagram using
-// Meta's official Graph API (no third-party scheduler needed).
+// the official Instagram API with Instagram Login (no Facebook Page required).
 
 import { checkCronAuth, airtableList, airtableUpdate } from "@/lib/helpers";
 
 export const maxDuration = 60;
 
-const GRAPH = "https://graph.facebook.com/v21.0";
+// Instagram Login (creator/business) tokens authenticate against
+// graph.instagram.com, NOT graph.facebook.com. The content-publishing
+// endpoints (/media and /media_publish) are the same on this host.
+const GRAPH = "https://graph.instagram.com/v21.0";
 
 export async function GET(request) {
   if (!checkCronAuth(request)) {
