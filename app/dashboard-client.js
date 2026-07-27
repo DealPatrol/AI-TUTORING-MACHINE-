@@ -6,7 +6,7 @@ export default function DashboardClient() {
   const [data, setData] = useState({ queue: [], winners: [], posted: [] });
   const [loading, setLoading] = useState(false);
   const [triggering, setTriggering] = useState({});
-  const [message, setMessage] = useState("Airtable not configured yet. Add API credentials to Vercel to view live data.");
+  const [message, setMessage] = useState("");
 
   // Fetch dashboard data
   useEffect(() => {
@@ -17,9 +17,12 @@ export default function DashboardClient() {
         if (!result.error) {
           setData(result);
           setMessage("");
+        } else {
+          setMessage("Could not load Airtable data. Check credentials in Vercel project settings.");
         }
       } catch (err) {
         console.error("Fetch error:", err);
+        setMessage("Could not reach the data API. Check your connection.");
       }
     };
 
