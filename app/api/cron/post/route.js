@@ -45,6 +45,29 @@ export async function GET(request) {
     const container = await containerRes.json();
     if (!container.id) throw new Error(`Container failed: ${JSON.stringify(container)}`);
 
+    // 2b. Wait for Instagram to finish processing the media before publishing.
+    // Instagram downloads/processes the image asynchronously; publishing too
+    // early fails with code 9007 "media is not ready for publishing".
+    let ready = false;
+    for (let attempt = 0; attempt < 10; attempt++) {
+      await new Promise((r) => setTimeout(r, 3000)); // wait 3s between checks
+      const statusRes = await fetch(
+        `${GRAPH}/${container.id}?fields=status_code,status&access_token=${token}`
+      );
+      const status = await statusRes.json();
+      if (status.status_code === "FINISHED") {
+        ready = true;
+        break;
+      }
+      if (status.status_code === "ERROR" || status.status_code === "EXPIRED") {
+        throw new Error(`Media processing ${status.status_code}: ${JSON.stringify(status)}`);
+      }
+      // otherwise IN_PROGRESS — keep polling
+    }
+    if (!ready) {
+      throw new Error("Media did not finish processing in time (still IN_PROGRESS after ~30s)");
+    }
+
     // 3. Publish it
     const publishRes = await fetch(`${GRAPH}/${igUserId}/media_publish`, {
       method: "POST",
