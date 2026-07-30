@@ -94,10 +94,27 @@ export default function DashboardClient() {
         </button>
         <button
           className="control-btn btn-post"
-          onClick={() => triggerCron("post")}
-          disabled={triggering.post}
+          onClick={() => triggerCron("post-1")}
+          disabled={triggering["post-1"]}
+          title="Publish post #1 (Sequence 1)"
         >
-          {triggering.post ? "🔄 Running..." : "📱 Trigger Post"}
+          {triggering["post-1"] ? "🔄 Running..." : "📱 Post #1 (12pm)"}
+        </button>
+        <button
+          className="control-btn btn-post"
+          onClick={() => triggerCron("post-2")}
+          disabled={triggering["post-2"]}
+          title="Publish post #2 (Sequence 2)"
+        >
+          {triggering["post-2"] ? "🔄 Running..." : "📱 Post #2 (2pm)"}
+        </button>
+        <button
+          className="control-btn btn-post"
+          onClick={() => triggerCron("post-3")}
+          disabled={triggering["post-3"]}
+          title="Publish post #3 (Sequence 3)"
+        >
+          {triggering["post-3"] ? "🔄 Running..." : "📱 Post #3 (4pm)"}
         </button>
         <button
           className="control-btn"
@@ -113,32 +130,40 @@ export default function DashboardClient() {
         {/* Queue Section */}
         <div className="section">
           <div className="section-header">
-            <h2>📋 Ready to Post</h2>
+            <h2>📋 Ready to Post (3 Daily)</h2>
             <p>{data?.queue?.length || 0} posts in queue</p>
           </div>
           <div className="section-content">
             {!data?.queue || data.queue.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">📭</div>
-                <p>Queue is empty. Run the Generate cron to create posts.</p>
+                <p>Queue is empty. Run the Generate cron to create 3 posts.</p>
               </div>
             ) : (
-              data.queue.map((post) => (
-                <div key={post.id} className="item">
-                  <div className="item-title">{post.hook}</div>
-                  <div className="item-meta">
-                    <span className="status-badge status-ready">{post.status}</span>
+              data.queue.map((post) => {
+                const times = { 1: "12:00 PM UTC", 2: "2:00 PM UTC", 3: "4:00 PM UTC" };
+                const sequence = post.sequence || post.fields?.Sequence || "?";
+                return (
+                  <div key={post.id} className="item">
+                    <div className="item-title">
+                      Post #{sequence} — {times[sequence] || "?"}
+                      <span style={{ fontSize: "0.85em", marginLeft: "0.5rem" }}>{post.hook}</span>
+                    </div>
+                    <div className="item-meta">
+                      <span className="status-badge status-ready">{post.status}</span>
+                      <span>Sequence: {sequence}</span>
+                    </div>
+                    {post.imageUrl && (
+                      <img src={post.imageUrl} alt={post.hook} className="item-image" />
+                    )}
+                    <div className="item-caption">{post.caption?.slice(0, 120)}...</div>
                   </div>
-                  {post.imageUrl && (
-                    <img src={post.imageUrl} alt={post.hook} className="item-image" />
-                  )}
-                  <div className="item-caption">{post.caption?.slice(0, 120)}...</div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
           <div className="section-footer">
-            Auto-posts daily at 3:00 PM UTC
+            Auto-posts daily: 12 PM, 2 PM, 4 PM UTC (3 different hooks, visuals, angles)
           </div>
         </div>
 
@@ -219,16 +244,20 @@ export default function DashboardClient() {
           <li><code>IG_USER_ID</code> - Configured ✓</li>
         </ul>
         <p>
-          <strong>Automated schedule:</strong>
+          <strong>Three-Vector Automated Schedule (3 posts/day):</strong>
         </p>
         <ol style={{ marginLeft: "2rem", marginBottom: "1rem" }}>
-          <li><strong>Research</strong> — Mondays 9 AM UTC: finds high-performing posts (500+ likes)</li>
-          <li><strong>Generate</strong> — Daily 12 PM UTC: rewrites copy + designs graphics</li>
-          <li><strong>Post</strong> — Daily 3 PM UTC: publishes the next Ready post to Instagram</li>
+          <li><strong>Research</strong> — Mondays 9 AM UTC: Finds high-performing posts (500+ likes)</li>
+          <li><strong>Generate</strong> — Daily 7 AM UTC: Creates 3 variations (Gemini scripts + unique images)</li>
+          <li><strong>Post #1</strong> — Daily 12 PM UTC: Posts first variation (Sequence 1)</li>
+          <li><strong>Post #2</strong> — Daily 2 PM UTC: Posts second variation (Sequence 2)</li>
+          <li><strong>Post #3</strong> — Daily 4 PM UTC: Posts third variation (Sequence 3)</li>
         </ol>
         <p>
-          Use the buttons above to trigger any step manually. The <strong>Trigger Post</strong> button
-          publishes the next queued post to your live Instagram account immediately.
+          <strong>Vector 1 (Volume):</strong> 3 posts minimum per day <strong>Vector 2 (Velocity):</strong> All 3 clustered in a 4-hour window <strong>Vector 3 (Signal Density):</strong> 3 distinct hooks, visuals, and angles per day
+        </p>
+        <p>
+          Use the Post buttons above to manually test each post time, or use Generate to create 3 new variations immediately.
         </p>
       </div>
     </div>
