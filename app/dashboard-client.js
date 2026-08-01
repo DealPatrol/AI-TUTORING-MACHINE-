@@ -288,10 +288,12 @@ export default function DashboardClient() {
         <p>
           Daily schedule: research Mon 6:00 UTC · feed generate 7:00 · reel generate 8:00 ·
           carousel Tue/Thu/Sat 9:00 · feed/carousel post 15:00 · <strong>reel post 18:00 UTC</strong>.
+          Each publish also pushes a Story for profile visits.
         </p>
         <p>
           Reels use Gemini Veo (<code>VEO_MODEL</code> optional, default{" "}
           <code>veo-3.1-fast-generate-preview</code>). Needs a paid Gemini key with Veo access.
+          Add Queue fields: Type, Video URL, Cover URL, First Comment, Slide URLs, Story Text, Story Image URL.
         </p>
       </div>
     </div>

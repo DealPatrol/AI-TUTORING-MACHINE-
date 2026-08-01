@@ -65,10 +65,12 @@ curl -H "Authorization: Bearer YOUR_CRON_SECRET" https://your-app.vercel.app/api
 
 | Feature | Why it helps | Schedule |
 |--------|----------------|----------|
-| **Daily Reels** | Reels get the widest non-follower reach | Generate 8:00 UTC · Post 18:00 UTC |
-| **Viral hooks + comment CTAs** | Comments boost distribution | Every feed/reel/carousel |
+| **Daily Reels** | Reels get the widest non-follower reach | Generate 8:00 UTC · Post **18:00 UTC daily** |
+| **Follow end-cards + CTAs** | Converts viewers → followers | Every Reel/feed/carousel |
+| **Stories after each post** | Extra profile visits same day | Auto after feed + reel publish |
 | **First comment hashtags** | Cleaner caption, still discoverable | Auto after every publish |
 | **Carousels** | Highest save rate → more reach | Tue / Thu / Sat |
+| **Instagram search keywords** | Shows up for “ChatGPT tips” etc. | Built into captions |
 | **Smarter research** | Prefers high comment-rate + video ideas | Mondays |
 
 Tune voice/prompts in `lib/growth.js`.
