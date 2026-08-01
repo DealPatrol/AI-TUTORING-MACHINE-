@@ -1,4 +1,4 @@
-// DAILY REEL — script + cover + Veo video → Queue (Type=Reel)
+// DAILY REEL — script + cover + Veo video + Story creative → Queue (Type=Reel)
 // Reels are the fastest organic growth format on Instagram.
 
 import { put } from "@vercel/blob";
@@ -12,7 +12,7 @@ import {
   generateGeminiImage,
   generateVeoReel,
 } from "@/lib/helpers";
-import { reelGrowthPrompt, buildFirstComment } from "@/lib/growth";
+import { reelGrowthPrompt, buildFirstComment, storyOverlayPrompt } from "@/lib/growth";
 
 export const maxDuration = 300;
 
@@ -42,9 +42,17 @@ export async function GET(request) {
 Style: soft cream background, bold dark charcoal sans-serif headline,
 small friendly robot mascot, flat modern design, no photo, high contrast.
 Big headline text (render exactly): "${content.coverText || content.hook}"
-Tiny label at bottom: "AI tip · 8 sec"`
+Tiny label at bottom: "Follow for daily AI tips"`
     );
     const coverBlob = await put(`reels/cover-${stamp}.png`, cover.buffer, {
+      access: "public",
+      contentType: "image/png",
+    });
+
+    const story = await generateGeminiImage(
+      storyOverlayPrompt(content.hook, content.storyText || content.coverText)
+    );
+    const storyBlob = await put(`stories/reel-${stamp}.png`, story.buffer, {
       access: "public",
       contentType: "image/png",
     });
@@ -52,9 +60,9 @@ Tiny label at bottom: "AI tip · 8 sec"`
     const videoPrompt =
       content.videoPrompt ||
       `Vertical 9:16 Instagram Reel, 8 seconds. Soft cream background, bold dark charcoal kinetic typography.
-On-screen text in order: "${content.hook}", then ${(content.beats || []).map((b) => `"${b}"`).join(", ")}.
+On-screen text in order: "${content.hook}", then ${(content.beats || []).map((b) => `"${b}"`).join(", ")}, then "Follow for daily AI tips".
 Small friendly robot mascot reacts in the corner. Flat modern motion graphics, no photoreal people.
-Clear energetic teacher voiceover: "${content.voiceover || content.hook}". Subtle upbeat music.`;
+Clear energetic teacher voiceover: "${content.voiceover || content.hook}". Subtle upbeat music. Large readable mobile text.`;
 
     const videoBuffer = await generateVeoReel(videoPrompt, {
       aspectRatio: "9:16",
@@ -67,7 +75,8 @@ Clear energetic teacher voiceover: "${content.voiceover || content.hook}". Subtl
     });
 
     const firstComment =
-      content.firstComment || buildFirstComment({ cta: "Follow for one AI Reel a day." });
+      content.firstComment ||
+      buildFirstComment({ cta: "Want tomorrow's Reel? Follow — I post one AI tip every day." });
 
     await airtableCreateQueue({
       Hook: content.hook,
@@ -78,6 +87,8 @@ Clear energetic teacher voiceover: "${content.voiceover || content.hook}". Subtl
       Status: "Ready",
       Type: "Reel",
       "First Comment": firstComment,
+      "Story Text": content.storyText || content.coverText || content.hook,
+      "Story Image URL": storyBlob.url,
       "Source URL": winner.fields["Post URL"] || "",
     });
     await airtableUpdate("Winners", winner.id, { Status: "Used" });

@@ -11,7 +11,7 @@ import {
   parseClaudeJson,
   generateGeminiImage,
 } from "@/lib/helpers";
-import { carouselGrowthPrompt, buildFirstComment } from "@/lib/growth";
+import { carouselGrowthPrompt, buildFirstComment, storyOverlayPrompt } from "@/lib/growth";
 
 export const maxDuration = 300;
 
@@ -57,9 +57,19 @@ ${i === slides.length - 1 ? 'Bottom label: "Follow for daily AI tips"' : ""}`
       slideUrls.push(blob.url);
     }
 
+    const story = await generateGeminiImage(
+      storyOverlayPrompt(content.hook, content.storyText)
+    );
+    const storyBlob = await put(`stories/carousel-${stamp}.png`, story.buffer, {
+      access: "public",
+      contentType: "image/png",
+    });
+
     const firstComment =
       content.firstComment ||
-      buildFirstComment({ cta: "Save this carousel — you'll want it later." });
+      buildFirstComment({
+        cta: "Save this carousel — then follow for the next one tomorrow.",
+      });
 
     await airtableCreateQueue({
       Hook: content.hook,
@@ -69,6 +79,8 @@ ${i === slides.length - 1 ? 'Bottom label: "Follow for daily AI tips"' : ""}`
       Status: "Ready",
       Type: "Carousel",
       "First Comment": firstComment,
+      "Story Text": content.storyText || content.hook,
+      "Story Image URL": storyBlob.url,
       "Source URL": winner.fields["Post URL"] || "",
     });
     await airtableUpdate("Winners", winner.id, { Status: "Used" });

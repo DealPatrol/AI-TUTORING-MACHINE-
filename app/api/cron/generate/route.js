@@ -1,5 +1,5 @@
 // SKILL 02 + 03 — THE COPYWRITER + THE DESIGNER (runs daily)
-// Growth-optimized feed graphic: rewrite, design, queue with first-comment CTA.
+// Growth-optimized feed graphic + Story creative for follower conversion.
 
 import { put } from "@vercel/blob";
 import {
@@ -11,7 +11,7 @@ import {
   parseClaudeJson,
   generateGeminiImage,
 } from "@/lib/helpers";
-import { feedGrowthPrompt, buildFirstComment } from "@/lib/growth";
+import { feedGrowthPrompt, buildFirstComment, storyOverlayPrompt } from "@/lib/growth";
 
 export const maxDuration = 120;
 
@@ -32,6 +32,7 @@ export async function GET(request) {
 
     const raw = await claudeRewrite(feedGrowthPrompt(winner.fields.Caption || ""));
     const content = parseClaudeJson(raw);
+    const stamp = Date.now();
 
     const { buffer } = await generateGeminiImage(
       `Create a clean, modern Instagram graphic, square 1:1.
@@ -42,7 +43,16 @@ Headline text (render exactly): "${content.hook}"
 Smaller subtext below it (render exactly): "${content.subtext || ""}"`
     );
 
-    const blob = await put(`posts/${Date.now()}.png`, buffer, {
+    const blob = await put(`posts/${stamp}.png`, buffer, {
+      access: "public",
+      contentType: "image/png",
+    });
+
+    // Vertical Story creative → more profile visits when posted same day
+    const story = await generateGeminiImage(
+      storyOverlayPrompt(content.hook, content.storyText)
+    );
+    const storyBlob = await put(`stories/${stamp}.png`, story.buffer, {
       access: "public",
       contentType: "image/png",
     });
@@ -58,6 +68,8 @@ Smaller subtext below it (render exactly): "${content.subtext || ""}"`
       Status: "Ready",
       Type: "Feed",
       "First Comment": firstComment,
+      "Story Text": content.storyText || content.hook,
+      "Story Image URL": storyBlob.url,
       "Source URL": winner.fields["Post URL"] || "",
     });
     await airtableUpdate("Winners", winner.id, { Status: "Used" });
