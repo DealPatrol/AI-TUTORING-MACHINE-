@@ -1,4 +1,4 @@
-// DAILY REEL POSTER — publishes one Ready Reel per day (Reels tab + feed).
+// DAILY REEL POSTER — one Reel/day to Reels tab + feed, then Story + first comment.
 
 import {
   checkCronAuth,
@@ -8,6 +8,7 @@ import {
   postIgFirstComment,
   createIgReelContainer,
   listReadyQueue,
+  publishIgStory,
 } from "@/lib/helpers";
 
 export const maxDuration = 180;
@@ -53,6 +54,15 @@ export async function GET(request) {
       token
     );
 
+    // Same-day Story from vertical creative → more profile visits → more follows
+    const storyImage =
+      post.fields["Story Image URL"] ||
+      post.fields["Cover URL"] ||
+      post.fields["Image URL"];
+    const story = storyImage
+      ? await publishIgStory({ igUserId, token, imageUrl: storyImage })
+      : null;
+
     await airtableUpdate("Queue", post.id, {
       Status: "Posted",
       "Posted At": new Date().toISOString(),
@@ -64,6 +74,7 @@ export async function GET(request) {
       type: "Reel",
       igMediaId: published.id,
       firstCommentId: comment?.id || null,
+      storyId: story?.id || null,
     });
   } catch (err) {
     console.error("Post reel cron error:", err);

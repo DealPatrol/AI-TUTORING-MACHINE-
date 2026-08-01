@@ -34,6 +34,8 @@ Fields:
 | **Cover URL** | URL | Reel cover image |
 | **First Comment** | Long text | Auto-posted after publish (CTAs + hashtags) |
 | **Slide URLs** | Long text | JSON array of carousel image URLs |
+| **Story Text** | Single line text | Overlay copy for Stories |
+| **Story Image URL** | URL | 9:16 Story graphic (posted after feed/reel) |
 
 ### Quick add (growth fields)
 
@@ -44,6 +46,8 @@ If Queue already exists, add:
 3. `Cover URL` — URL  
 4. `First Comment` — long text  
 5. `Slide URLs` — long text  
+6. `Story Text` — single line text  
+7. `Story Image URL` — URL  
 
 Without these, feed posts still work; Reels and carousels will error with a clear setup message.
 

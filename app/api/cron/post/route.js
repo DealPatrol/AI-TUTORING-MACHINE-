@@ -1,5 +1,5 @@
 // SKILL 04 — THE POSTER (runs daily)
-// Publishes the next Ready Feed or Carousel from Queue, then drops a growth first-comment.
+// Publishes Feed/Carousel, first-comment CTA, then a Story for profile visits.
 
 import {
   checkCronAuth,
@@ -10,6 +10,7 @@ import {
   createIgImageContainer,
   createIgCarouselContainer,
   listReadyQueue,
+  publishIgStory,
 } from "@/lib/helpers";
 
 export const maxDuration = 120;
@@ -87,6 +88,14 @@ export async function GET(request) {
       token
     );
 
+    // Story = extra profile visits the same day (followers come from profile, not just the Reel)
+    const storyImage =
+      post.fields["Story Image URL"] ||
+      (type === "Carousel" ? null : post.fields["Image URL"]);
+    const story = storyImage
+      ? await publishIgStory({ igUserId, token, imageUrl: storyImage })
+      : null;
+
     await airtableUpdate("Queue", post.id, {
       Status: "Posted",
       "Posted At": new Date().toISOString(),
@@ -98,6 +107,7 @@ export async function GET(request) {
       type,
       igMediaId: published.id,
       firstCommentId: comment?.id || null,
+      storyId: story?.id || null,
     });
   } catch (err) {
     console.error("Post cron error:", err);
