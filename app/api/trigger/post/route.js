@@ -1,25 +1,20 @@
 import { NextResponse } from "next/server";
+import { appBaseUrl } from "@/lib/helpers";
 
-export async function POST(request) {
+export async function POST() {
   try {
-    const cron = await fetch(`${process.env.VERCEL_URL ? "https://" + process.env.VERCEL_URL : "http://localhost:3000"}/api/cron/post`, {
+    const cron = await fetch(`${appBaseUrl()}/api/cron/post`, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${process.env.CRON_SECRET}`,
-      },
+      headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
     });
-
     const data = await cron.json();
     return NextResponse.json({
-      success: true,
-      message: "Post cron triggered",
+      success: cron.ok,
+      message: "post cron triggered",
       data,
     });
   } catch (error) {
     console.error("Trigger post error:", error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

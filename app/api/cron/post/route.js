@@ -1,12 +1,18 @@
 // SKILL 04 — THE POSTER (runs daily)
-// Publishes the next "Ready" post from the Queue to Instagram using
-// Meta's official Graph API (no third-party scheduler needed).
+// Publishes the next Ready Feed or Carousel from Queue, then drops a growth first-comment.
 
-import { checkCronAuth, airtableList, airtableUpdate } from "@/lib/helpers";
+import {
+  checkCronAuth,
+  airtableUpdate,
+  waitForIgContainer,
+  publishIgContainer,
+  postIgFirstComment,
+  createIgImageContainer,
+  createIgCarouselContainer,
+  listReadyQueue,
+} from "@/lib/helpers";
 
-export const maxDuration = 60;
-
-const GRAPH = "https://graph.instagram.com/v21.0";
+export const maxDuration = 120;
 
 export async function GET(request) {
   if (!checkCronAuth(request)) {
@@ -14,75 +20,85 @@ export async function GET(request) {
   }
 
   try {
-    // 1. Next post in the queue
-    const queue = await airtableList(
-      "Queue",
-      "maxRecords=1&filterByFormula=" + encodeURIComponent(`{Status}="Ready"`)
-    );
+    // Prefer carousels (high saves), else feed graphics — reels have their own cron
+    let queue = await listReadyQueue("Carousel");
     if (queue.length === 0) {
-      return Response.json({ ok: true, message: "Queue is empty" });
+      queue = await listReadyQueue("Feed");
     }
+    if (queue.length === 0) {
+      return Response.json({ ok: true, message: "Queue is empty for feed/carousel" });
+    }
+
     const post = queue[0];
-    if (!post.fields["Image URL"]) {
-      return Response.json({ error: `Record ${post.id} has no Image URL, skipping.` }, { status: 400 });
-    }
+    const type = post.fields.Type || "Feed";
     const token = process.env.IG_ACCESS_TOKEN;
     const igUserId = process.env.IG_USER_ID;
+    let container;
 
-    // 2. Create a media container
-    const containerRes = await fetch(`${GRAPH}/${igUserId}/media`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        image_url: post.fields["Image URL"],
+    if (type === "Carousel") {
+      let slides = [];
+      try {
+        slides = JSON.parse(post.fields["Slide URLs"] || "[]");
+      } catch {
+        slides = [];
+      }
+      if (!Array.isArray(slides) || slides.length < 2) {
+        return Response.json(
+          { error: `Carousel ${post.id} needs Slide URLs JSON with 2+ images` },
+          { status: 400 }
+        );
+      }
+
+      const childIds = [];
+      for (const imageUrl of slides) {
+        const child = await createIgImageContainer({
+          igUserId,
+          token,
+          imageUrl,
+          isCarouselItem: true,
+        });
+        await waitForIgContainer(child.id, token, { attempts: 15, delayMs: 2000 });
+        childIds.push(child.id);
+      }
+      container = await createIgCarouselContainer({
+        igUserId,
+        token,
+        children: childIds,
         caption: post.fields.Caption || "",
-        access_token: token,
-      }),
-    });
-    const container = await containerRes.json();
-    if (!container.id) throw new Error(`Container failed: ${JSON.stringify(container)}`);
-
-    // 3. Wait for Instagram to finish processing the image.
-    //    Publishing too early returns "Media ID is not available".
-    let ready = false;
-    for (let attempt = 0; attempt < 15; attempt++) {
-      const statusRes = await fetch(
-        `${GRAPH}/${container.id}?fields=status_code&access_token=${token}`
-      );
-      const status = await statusRes.json();
-
-      if (status.status_code === "FINISHED") {
-        ready = true;
-        break;
+      });
+    } else {
+      if (!post.fields["Image URL"]) {
+        return Response.json({ error: `Record ${post.id} has no Image URL, skipping.` }, { status: 400 });
       }
-      if (status.status_code === "ERROR" || status.status_code === "EXPIRED") {
-        throw new Error(`Container processing failed: ${JSON.stringify(status)}`);
-      }
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-    }
-    if (!ready) {
-      throw new Error("Container did not finish processing within 30 seconds");
+      container = await createIgImageContainer({
+        igUserId,
+        token,
+        imageUrl: post.fields["Image URL"],
+        caption: post.fields.Caption || "",
+      });
     }
 
-    // 4. Publish it
-    const publishRes = await fetch(`${GRAPH}/${igUserId}/media_publish`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        creation_id: container.id,
-        access_token: token,
-      }),
-    });
-    const published = await publishRes.json();
-    if (!published.id) throw new Error(`Publish failed: ${JSON.stringify(published)}`);
+    await waitForIgContainer(container.id, token);
+    const published = await publishIgContainer(container.id, token, igUserId);
 
-    // 5. Mark it posted
+    const comment = await postIgFirstComment(
+      published.id,
+      post.fields["First Comment"] || "",
+      token
+    );
+
     await airtableUpdate("Queue", post.id, {
       Status: "Posted",
       "Posted At": new Date().toISOString(),
     });
 
-    return Response.json({ ok: true, posted: post.fields.Hook, igMediaId: published.id });
+    return Response.json({
+      ok: true,
+      posted: post.fields.Hook,
+      type,
+      igMediaId: published.id,
+      firstCommentId: comment?.id || null,
+    });
   } catch (err) {
     console.error("Post cron error:", err);
     return Response.json({ error: err.message }, { status: 500 });

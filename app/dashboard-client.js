@@ -3,12 +3,17 @@
 import { useState, useEffect } from "react";
 
 export default function DashboardClient() {
-  const [data, setData] = useState({ queue: [], winners: [], posted: [] });
-  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState({
+    queue: [],
+    winners: [],
+    posted: [],
+    stats: { readyFeed: 0, readyReels: 0, readyCarousels: 0, winnersWaiting: 0 },
+  });
   const [triggering, setTriggering] = useState({});
-  const [message, setMessage] = useState("Airtable not configured yet. Add API credentials to Vercel to view live data.");
+  const [message, setMessage] = useState(
+    "Airtable not configured yet. Add API credentials to Vercel to view live data."
+  );
 
-  // Fetch dashboard data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -28,7 +33,6 @@ export default function DashboardClient() {
     return () => clearInterval(interval);
   }, []);
 
-  // Trigger a cron manually
   const triggerCron = async (cronName) => {
     setTriggering((prev) => ({ ...prev, [cronName]: true }));
     setMessage("");
@@ -38,13 +42,14 @@ export default function DashboardClient() {
       if (result.success) {
         setMessage(`✓ ${cronName} triggered successfully`);
         setTimeout(() => {
-          // Refresh data after trigger
-          fetch("/api/dashboard/data").then((r) => r.json()).then((d) => {
-            if (!d.error) setData(d);
-          });
+          fetch("/api/dashboard/data")
+            .then((r) => r.json())
+            .then((d) => {
+              if (!d.error) setData(d);
+            });
         }, 1000);
       } else {
-        setMessage(`✗ ${cronName} failed: ${result.error}`);
+        setMessage(`✗ ${cronName} failed: ${result.error || result.data?.error || "unknown"}`);
       }
     } catch (err) {
       setMessage(`✗ ${cronName} error: ${err.message}`);
@@ -52,11 +57,39 @@ export default function DashboardClient() {
     setTriggering((prev) => ({ ...prev, [cronName]: false }));
   };
 
+  const typeBadge = (type) => {
+    const t = type || "Feed";
+    const colors = {
+      Feed: { bg: "#dbeafe", fg: "#1e40af" },
+      Reel: { bg: "#fce7f3", fg: "#9d174d" },
+      Carousel: { bg: "#dcfce7", fg: "#166534" },
+    };
+    const c = colors[t] || colors.Feed;
+    return (
+      <span
+        className="status-badge"
+        style={{ background: c.bg, color: c.fg }}
+      >
+        {t}
+      </span>
+    );
+  };
+
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <h1>🤖 AI Tutor Machine</h1>
-        <p>Automated Instagram content system • Research → Copywrite → Design → Post</p>
+        <h1>AI Tutor Machine</h1>
+        <p>
+          Growth engine · Feed + daily Reels + save-magnet carousels · Research → Write → Design → Post
+        </p>
+        {data?.stats && (
+          <div className="item-meta" style={{ marginTop: "1rem" }}>
+            <span>{data.stats.readyFeed || 0} feed ready</span>
+            <span>{data.stats.readyReels || 0} reels ready</span>
+            <span>{data.stats.readyCarousels || 0} carousels ready</span>
+            <span>{data.stats.winnersWaiting || 0} winners waiting</span>
+          </div>
+        )}
       </div>
 
       {message && (
@@ -65,9 +98,23 @@ export default function DashboardClient() {
             padding: "1rem",
             borderRadius: "8px",
             marginBottom: "1rem",
-            background: message.includes("✓") ? "#dcfce7" : message.includes("✗") ? "#fee2e2" : "#fef3c7",
-            color: message.includes("✓") ? "#166534" : message.includes("✗") ? "#991b1b" : "#92400e",
-            border: `1px solid ${message.includes("✓") ? "#86efac" : message.includes("✗") ? "#fca5a5" : "#fcd34d"}`,
+            background: message.includes("✓")
+              ? "#dcfce7"
+              : message.includes("✗")
+                ? "#fee2e2"
+                : "#fef3c7",
+            color: message.includes("✓")
+              ? "#166534"
+              : message.includes("✗")
+                ? "#991b1b"
+                : "#92400e",
+            border: `1px solid ${
+              message.includes("✓")
+                ? "#86efac"
+                : message.includes("✗")
+                  ? "#fca5a5"
+                  : "#fcd34d"
+            }`,
           }}
         >
           {message}
@@ -80,54 +127,86 @@ export default function DashboardClient() {
           onClick={() => triggerCron("research")}
           disabled={triggering.research}
         >
-          {triggering.research ? "🔄 Running..." : "🔍 Trigger Research"}
+          {triggering.research ? "Running..." : "Trigger Research"}
         </button>
         <button
           className="control-btn btn-generate"
           onClick={() => triggerCron("generate")}
           disabled={triggering.generate}
         >
-          {triggering.generate ? "🔄 Running..." : "✨ Trigger Generate"}
+          {triggering.generate ? "Running..." : "Generate Feed"}
+        </button>
+        <button
+          className="control-btn"
+          style={{ background: "#db2777", color: "white" }}
+          onClick={() => triggerCron("generate-reel")}
+          disabled={triggering["generate-reel"]}
+        >
+          {triggering["generate-reel"] ? "Running..." : "Generate Reel"}
+        </button>
+        <button
+          className="control-btn"
+          style={{ background: "#059669", color: "white" }}
+          onClick={() => triggerCron("generate-carousel")}
+          disabled={triggering["generate-carousel"]}
+        >
+          {triggering["generate-carousel"] ? "Running..." : "Generate Carousel"}
         </button>
         <button
           className="control-btn btn-post"
           onClick={() => triggerCron("post")}
           disabled={triggering.post}
         >
-          {triggering.post ? "🔄 Running..." : "📱 Trigger Post"}
+          {triggering.post ? "Running..." : "Post Feed/Carousel"}
+        </button>
+        <button
+          className="control-btn"
+          style={{ background: "#be185d", color: "white" }}
+          onClick={() => triggerCron("post-reel")}
+          disabled={triggering["post-reel"]}
+        >
+          {triggering["post-reel"] ? "Running..." : "Post Reel"}
         </button>
         <button
           className="control-btn"
           style={{ background: "#10b981", color: "white" }}
-          onClick={() => fetch("/api/dashboard/data").then((r) => r.json()).then((d) => { if (!d.error) setData(d); })}
-          disabled={loading}
+          onClick={() =>
+            fetch("/api/dashboard/data")
+              .then((r) => r.json())
+              .then((d) => {
+                if (!d.error) setData(d);
+              })
+          }
         >
-          🔄 Refresh Data
+          Refresh Data
         </button>
       </div>
 
       <div className="sections">
-        {/* Queue Section */}
         <div className="section">
           <div className="section-header">
-            <h2>📋 Ready to Post</h2>
-            <p>{data?.queue?.length || 0} posts in queue</p>
+            <h2>Ready to Post</h2>
+            <p>{data?.queue?.length || 0} items in queue</p>
           </div>
           <div className="section-content">
             {!data?.queue || data.queue.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">📭</div>
-                <p>Queue is empty. Run the Generate cron to create posts.</p>
+                <p>Queue is empty. Generate a feed post, reel, or carousel.</p>
               </div>
             ) : (
               data.queue.map((post) => (
                 <div key={post.id} className="item">
                   <div className="item-title">{post.hook}</div>
                   <div className="item-meta">
+                    {typeBadge(post.type)}
                     <span className="status-badge status-ready">{post.status}</span>
                   </div>
                   {post.imageUrl && (
                     <img src={post.imageUrl} alt={post.hook} className="item-image" />
+                  )}
+                  {post.videoUrl && (
+                    <div className="item-caption">Video ready · {post.videoUrl.slice(0, 48)}…</div>
                   )}
                   <div className="item-caption">{post.caption?.slice(0, 120)}...</div>
                 </div>
@@ -135,15 +214,14 @@ export default function DashboardClient() {
             )}
           </div>
           <div className="section-footer">
-            Auto-posts daily at 3:00 PM UTC
+            Feed/carousel ~3pm UTC · Reels daily ~6pm UTC
           </div>
         </div>
 
-        {/* Winners Section */}
         <div className="section">
           <div className="section-header">
-            <h2>⭐ New Winners</h2>
-            <p>{data?.winners?.length || 0} posts to rewrite</p>
+            <h2>New Winners</h2>
+            <p>{data?.winners?.length || 0} ideas to rewrite</p>
           </div>
           <div className="section-content">
             {!data?.winners || data.winners.length === 0 ? (
@@ -156,8 +234,9 @@ export default function DashboardClient() {
                 <div key={winner.id} className="item">
                   <div className="item-title">{winner.account}</div>
                   <div className="item-meta">
-                    <span>❤️ {winner.likes?.toLocaleString()} likes</span>
-                    <span>💬 {winner.comments?.toLocaleString()} comments</span>
+                    <span>{winner.likes?.toLocaleString()} likes</span>
+                    <span>{winner.comments?.toLocaleString()} comments</span>
+                    {winner.growthScore != null && <span>score {winner.growthScore}</span>}
                     <span className="status-badge status-new">{winner.status}</span>
                   </div>
                   <div className="item-caption">{winner.caption}</div>
@@ -166,15 +245,14 @@ export default function DashboardClient() {
             )}
           </div>
           <div className="section-footer">
-            Researches high-performing posts (500+ likes)
+            Scored by comments + video/carousel bias (not just likes)
           </div>
         </div>
       </div>
 
-      {/* Posted History */}
       <div className="section" style={{ marginBottom: "2rem" }}>
         <div className="section-header">
-          <h2>✅ Recently Posted</h2>
+          <h2>Recently Posted</h2>
           <p>Last {data?.posted?.length || 0} posts</p>
         </div>
         <div className="section-content">
@@ -188,7 +266,10 @@ export default function DashboardClient() {
               <div key={post.id} className="item">
                 <div className="item-title">{post.hook}</div>
                 <div className="item-meta">
-                  <span>📅 {new Date(post.postedAt).toLocaleDateString()}</span>
+                  {typeBadge(post.type)}
+                  <span>
+                    {post.postedAt ? new Date(post.postedAt).toLocaleDateString() : "—"}
+                  </span>
                   <span className="status-badge status-posted">Posted</span>
                 </div>
               </div>
@@ -197,35 +278,20 @@ export default function DashboardClient() {
         </div>
       </div>
 
-      {/* Setup Instructions */}
       <div className="setup-section">
-        <h3>🔧 Setup Required: Environment Variables</h3>
+        <h3>Growth setup checklist</h3>
         <p>
-          To get this system fully operational, add these environment variables to your Vercel project settings:
+          Add these Queue fields in Airtable (see <code>AIRTABLE_SETUP.md</code>):{" "}
+          <code>Type</code>, <code>Video URL</code>, <code>Cover URL</code>,{" "}
+          <code>First Comment</code>, <code>Slide URLs</code>.
         </p>
-        <ul style={{ marginLeft: "2rem", marginBottom: "1rem" }}>
-          <li><code>AIRTABLE_API_KEY</code> - Already configured ✓</li>
-          <li><code>AIRTABLE_BASE_ID</code> - Already configured ✓</li>
-          <li><code>ANTHROPIC_API_KEY</code> - Already configured ✓</li>
-          <li><code>GEMINI_API_KEY</code> - Already configured ✓</li>
-          <li><code>APIFY_TOKEN</code> - Already configured ✓</li>
-          <li><code>APIFY_TASK_ID</code> - Already configured ✓</li>
-          <li><code>CRON_SECRET</code> - Already configured ✓</li>
-          <li><code>IG_ACCESS_TOKEN</code> - ⚠️ Still needed (Instagram API token)</li>
-          <li><code>IG_USER_ID</code> - ⚠️ Still needed (Instagram Business Account ID)</li>
-        </ul>
         <p>
-          <strong>Next Steps:</strong>
+          Daily schedule: research Mon 6:00 UTC · feed generate 7:00 · reel generate 8:00 ·
+          carousel Tue/Thu/Sat 9:00 · feed/carousel post 15:00 · <strong>reel post 18:00 UTC</strong>.
         </p>
-        <ol style={{ marginLeft: "2rem", marginBottom: "1rem" }}>
-          <li>Follow the <code>SETUP.md</code> guide in the repo for Instagram credential setup</li>
-          <li>Add <code>IG_ACCESS_TOKEN</code> and <code>IG_USER_ID</code> to Vercel settings</li>
-          <li>Redeploy the project</li>
-          <li>The crons will run on schedule (Research: Mondays 9 AM UTC, Generate: Daily 12 PM UTC, Post: Daily 3 PM UTC)</li>
-          <li>Use the dashboard buttons above to manually trigger any cron at any time</li>
-        </ol>
         <p>
-          Once Instagram credentials are added, posts will automatically publish to your Instagram Business Account!
+          Reels use Gemini Veo (<code>VEO_MODEL</code> optional, default{" "}
+          <code>veo-3.1-fast-generate-preview</code>). Needs a paid Gemini key with Veo access.
         </p>
       </div>
     </div>
