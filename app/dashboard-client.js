@@ -96,25 +96,52 @@ export default function DashboardClient() {
           className="control-btn btn-post"
           onClick={() => triggerCron("post-1")}
           disabled={triggering["post-1"]}
-          title="Publish post #1 (Sequence 1)"
+          title="Publish image #1"
         >
-          {triggering["post-1"] ? "🔄 Running..." : "📱 Post #1 (12pm)"}
+          {triggering["post-1"] ? "🔄 Running..." : "📱 Image #1 (12pm)"}
+        </button>
+        <button
+          className="control-btn"
+          style={{ background: "#dc2626", color: "white" }}
+          onClick={() => triggerCron("post-reel-1")}
+          disabled={triggering["post-reel-1"]}
+          title="Publish reel #1"
+        >
+          {triggering["post-reel-1"] ? "🔄 Running..." : "🎬 Reel #1 (1pm)"}
         </button>
         <button
           className="control-btn btn-post"
           onClick={() => triggerCron("post-2")}
           disabled={triggering["post-2"]}
-          title="Publish post #2 (Sequence 2)"
+          title="Publish image #2"
         >
-          {triggering["post-2"] ? "🔄 Running..." : "📱 Post #2 (2pm)"}
+          {triggering["post-2"] ? "🔄 Running..." : "📱 Image #2 (2pm)"}
+        </button>
+        <button
+          className="control-btn"
+          style={{ background: "#dc2626", color: "white" }}
+          onClick={() => triggerCron("post-reel-2")}
+          disabled={triggering["post-reel-2"]}
+          title="Publish reel #2"
+        >
+          {triggering["post-reel-2"] ? "🔄 Running..." : "🎬 Reel #2 (3pm)"}
         </button>
         <button
           className="control-btn btn-post"
           onClick={() => triggerCron("post-3")}
           disabled={triggering["post-3"]}
-          title="Publish post #3 (Sequence 3)"
+          title="Publish image #3"
         >
-          {triggering["post-3"] ? "🔄 Running..." : "📱 Post #3 (4pm)"}
+          {triggering["post-3"] ? "🔄 Running..." : "📱 Image #3 (4pm)"}
+        </button>
+        <button
+          className="control-btn"
+          style={{ background: "#dc2626", color: "white" }}
+          onClick={() => triggerCron("post-reel-3")}
+          disabled={triggering["post-reel-3"]}
+          title="Publish reel #3"
+        >
+          {triggering["post-reel-3"] ? "🔄 Running..." : "🎬 Reel #3 (5pm)"}
         </button>
         <button
           className="control-btn"
@@ -244,20 +271,23 @@ export default function DashboardClient() {
           <li><code>IG_USER_ID</code> - Configured ✓</li>
         </ul>
         <p>
-          <strong>Three-Vector Automated Schedule (3 posts/day):</strong>
+          <strong>Three-Vector Automated Schedule (6 posts/day: 3 images + 3 reels):</strong>
         </p>
         <ol style={{ marginLeft: "2rem", marginBottom: "1rem" }}>
-          <li><strong>Research</strong> — Mondays 9 AM UTC: Finds high-performing posts (500+ likes)</li>
-          <li><strong>Generate</strong> — Daily 7 AM UTC: Creates 3 variations (Gemini scripts + unique images)</li>
-          <li><strong>Post #1</strong> — Daily 12 PM UTC: Posts first variation (Sequence 1)</li>
-          <li><strong>Post #2</strong> — Daily 2 PM UTC: Posts second variation (Sequence 2)</li>
-          <li><strong>Post #3</strong> — Daily 4 PM UTC: Posts third variation (Sequence 3)</li>
+          <li><strong>Research</strong> — Mondays 9 AM UTC: Finds high-performing posts with videos (500+ likes)</li>
+          <li><strong>Generate</strong> — Daily 7 AM UTC: Creates 3 captions + pulls video URLs from Apify</li>
+          <li><strong>Image #1</strong> — Daily 12 PM UTC: Posts image with caption</li>
+          <li><strong>Reel #1</strong> — Daily 1 PM UTC: Posts Apify video with same caption</li>
+          <li><strong>Image #2</strong> — Daily 2 PM UTC: Posts image with caption</li>
+          <li><strong>Reel #2</strong> — Daily 3 PM UTC: Posts Apify video with same caption</li>
+          <li><strong>Image #3</strong> — Daily 4 PM UTC: Posts image with caption</li>
+          <li><strong>Reel #3</strong> — Daily 5 PM UTC: Posts Apify video with same caption</li>
         </ol>
         <p>
-          <strong>Vector 1 (Volume):</strong> 3 posts minimum per day <strong>Vector 2 (Velocity):</strong> All 3 clustered in a 4-hour window <strong>Vector 3 (Signal Density):</strong> 3 distinct hooks, visuals, and angles per day
+          <strong>Vector 1 (Volume):</strong> 6 posts per day <strong>Vector 2 (Velocity):</strong> All 6 clustered in 5-hour window (12pm-5pm) <strong>Vector 3 (Signal Density):</strong> 3 unique angles as images + videos for max reach
         </p>
         <p>
-          Use the Post buttons above to manually test each post time, or use Generate to create 3 new variations immediately.
+          Use the Image and Reel buttons above to test, or Generate to create 3 new variations with Apify videos daily.
         </p>
       </div>
     </div>

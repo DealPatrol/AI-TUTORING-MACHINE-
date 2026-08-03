@@ -36,6 +36,7 @@ export async function GET(request) {
         Likes: p.likesCount || 0,
         Comments: p.commentsCount || 0,
         Status: "New",
+        "Video URL": p.videoUrl || p.media?.[0]?.url || "", // capture video URL if available
       }));
 
     if (winners.length === 0) {
