@@ -2,11 +2,16 @@
 import { NextResponse } from "next/server";
 
 export async function POST(request) {
-  const origin = request.headers.get("origin");
-  const isLocalhost = origin?.includes("localhost") || origin?.includes("127.0.0.1");
-
-  if (!isLocalhost && !request.headers.get("authorization")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Dev: allow from localhost
+  // Prod: require valid CRON_SECRET in header
+  const url = new URL(request.url);
+  const isDev = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+  
+  if (!isDev) {
+    const secret = request.headers.get("x-cron-secret");
+    if (secret !== process.env.CRON_SECRET) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   try {
