@@ -13,13 +13,13 @@ export async function GET(request) {
   }
 
   try {
-    // 1. Find the first Ready post (Sequence=1)
+    // 1. Find the first Ready post
     const queue = await airtableList(
       "Queue",
-      "maxRecords=1&filterByFormula=" + encodeURIComponent(`AND({Status}="Ready", {Sequence}=1)`)
+      "maxRecords=1&filterByFormula=" + encodeURIComponent(`{Status}="Ready"`)
     );
     if (queue.length === 0) {
-      return Response.json({ ok: true, message: "No Sequence=1 posts ready" });
+      return Response.json({ ok: true, message: "No posts ready" });
     }
     const post = queue[0];
     if (!post.fields["Image URL"]) {
