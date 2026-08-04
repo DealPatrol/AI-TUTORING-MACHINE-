@@ -113,33 +113,24 @@ Make it visually striking, hook viewers instantly, mobile-optimized.`,
       });
     }
 
-    // 3. Queue all 3 variations with sequence order (images)
+    // 3. Queue all 3 variations with sequence order (images + video URLs for reels)
+    const videoUrl = winner.fields["Video URL"];
     for (const v of variations) {
-      await airtableCreate("Queue", {
+      const postData = {
         Hook: v.hook,
         Caption: v.caption,
         "Image URL": v.imageUrl,
         Status: "Ready",
         Sequence: v.sequence,
         "Source URL": v.sourceUrl,
-        Type: "image",
-      });
-    }
-
-    // 4. Queue all 3 variations as reels (same captions, but with video URLs from winner)
-    const videoUrl = winner.fields["Video URL"];
-    if (videoUrl) {
-      for (const v of variations) {
-        await airtableCreate("Queue", {
-          Hook: v.hook,
-          Caption: v.caption,
-          "Video URL": videoUrl,
-          Status: "Ready",
-          Sequence: v.sequence,
-          "Source URL": v.sourceUrl,
-          Type: "reel",
-        });
+      };
+      
+      // Add video URL if available (for reel posting)
+      if (videoUrl) {
+        postData["Video URL"] = videoUrl;
       }
+      
+      await airtableCreate("Queue", postData);
     }
 
     // 4. Mark winner as used
