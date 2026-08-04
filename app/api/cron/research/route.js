@@ -14,19 +14,22 @@ export async function GET(request) {
   }
 
   try {
-    // Fetch the most recent successful run of your Apify actor
-    // Try actor runs endpoint (for when actor is run directly)
-    const apifyUrl = `https://api.apify.com/v2/actors/${process.env.APIFY_TASK_ID}/runs?status=SUCCEEDED&limit=1&token=${process.env.APIFY_TOKEN}`;
+    // Fetch the most recent successful run of your Apify task
+    const taskId = process.env.APIFY_TASK_ID;
+    const token = process.env.APIFY_TOKEN;
+    console.log("[v0] Research: APIFY_TASK_ID =", taskId);
+    const apifyUrl = `https://api.apify.com/v2/actor-tasks/${taskId}/runs?status=SUCCEEDED&limit=1&token=${token}`;
+    console.log("[v0] Research: Fetching from", apifyUrl.split("?")[0]);
     const runsRes = await fetch(apifyUrl);
     if (!runsRes.ok) throw new Error(`Apify fetch failed: ${runsRes.status}`);
     const runsData = await runsRes.json();
     
-    if (!runsData.data.items.length) {
+    if (!runsData.data?.items?.length) {
       return Response.json({ ok: true, message: "No completed runs yet" });
     }
     
-    const runId = runsData.data.items[0].id;
-    const datasetRes = await fetch(`https://api.apify.com/v2/datasets/${runsData.data.items[0].defaultDatasetId}/items?token=${process.env.APIFY_TOKEN}`);
+    const datasetId = runsData.data.items[0].defaultDatasetId;
+    const datasetRes = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${process.env.APIFY_TOKEN}`);
     if (!datasetRes.ok) throw new Error(`Dataset fetch failed: ${datasetRes.status}`);
     const posts = await datasetRes.json();
 
