@@ -13,17 +13,20 @@ export async function GET(request) {
   }
 
   try {
-    // 1. Find a Ready reel (Type=reel, not yet posted)
+    // 1. Find a Ready post to post as a reel
     const queue = await airtableList(
       "Queue",
-      "maxRecords=1&filterByFormula=" + encodeURIComponent(`AND({Status}="Ready", {Type}="reel")`)
+      "maxRecords=1&filterByFormula=" + encodeURIComponent(`{Status}="Ready"`)
     );
     if (queue.length === 0) {
-      return Response.json({ ok: true, message: "No reels ready" });
+      return Response.json({ ok: true, message: "No posts ready" });
     }
     const reel = queue[0];
-    if (!reel.fields["Video URL"]) {
-      return Response.json({ error: `Reel ${reel.id} has no Video URL` }, { status: 400 });
+    
+    // Use Video URL if available, otherwise error
+    const videoUrl = reel.fields["Video URL"];
+    if (!videoUrl) {
+      return Response.json({ error: "No video URL available for this post" }, { status: 400 });
     }
 
     const token = process.env.IG_ACCESS_TOKEN;
@@ -35,7 +38,7 @@ export async function GET(request) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         media_type: "REELS",
-        video_url: reel.fields["Video URL"],
+        video_url: videoUrl,
         caption: reel.fields.Caption || "",
         access_token: token,
       }),
