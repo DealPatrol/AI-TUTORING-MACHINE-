@@ -23,11 +23,11 @@ export async function GET(request) {
     }
     const reel = queue[0];
     
-    // Use Video URL if available, otherwise use a test video from Apify
+    // Use Video URL if available, otherwise use a video from Apify
     let videoUrl = reel.fields["Video URL"];
     if (!videoUrl) {
-      // Use a sample Instagram video for testing until Video URL field is populated
-      videoUrl = "https://scontent.cdninstagram.com/v/t50.2886-16/468342_380371609479862_967813848_n.mp4?efg=eyJxZWx0YXJ5X2V4cCI6MzAwMjQ5MTEzLCJ2aW0iOjEsInAiOjl9&_nc_oc=AcTxExyRCEDzSfmQP7wGCdPJvvxDx2njjLCNV_-W49uJX3n6jLGBxVrKfKQH4UDI&_nc_ht=scontent.cdninstagram&oh=00_AYB7Ke2nIRH2j4hP4A4K-YRgLB4ZgxPwbPuDI2J4BHVrGQ&oe=67B43C15";
+      // Fallback to a real video from Apify scraper until Video URL field is populated
+      videoUrl = "https://scontent-yyz1-1.cdninstagram.com/o1/v/t2/f2/m86/AQM88WNein0a2XGw2CTxVNnEUFyEHYruyiUOHNvdHSbqD_Gex2u7vmGnPpIC9cRE-D6Ro35pwmnqOyg1cP_6RMkwK3k6MbgHSwyi9R4.mp4";
     }
 
     const token = process.env.IG_ACCESS_TOKEN;
