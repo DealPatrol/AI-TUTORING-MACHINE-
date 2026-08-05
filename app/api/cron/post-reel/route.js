@@ -1,14 +1,14 @@
-// DAILY REEL POSTER — one Reel/day to Reels tab + feed, then Story + first comment.
+// DAILY REEL POSTER — one Reel/day + Story + first comment; stores IG Media ID.
 
 import {
   checkCronAuth,
-  airtableUpdate,
   waitForIgContainer,
   publishIgContainer,
   postIgFirstComment,
   createIgReelContainer,
   listReadyQueue,
   publishIgStory,
+  safeAirtableUpdate,
 } from "@/lib/helpers";
 
 export const maxDuration = 180;
@@ -26,10 +26,11 @@ export async function GET(request) {
 
     const post = queue[0];
     if (!post.fields["Video URL"]) {
-      return Response.json(
-        { error: `Reel ${post.id} has no Video URL` },
-        { status: 400 }
-      );
+      await safeAirtableUpdate("Queue", post.id, {
+        Status: "Failed",
+        "Last Error": "Reel missing Video URL",
+      });
+      return Response.json({ error: `Reel ${post.id} has no Video URL` }, { status: 400 });
     }
 
     const token = process.env.IG_ACCESS_TOKEN;
@@ -44,7 +45,6 @@ export async function GET(request) {
       shareToFeed: true,
     });
 
-    // Reels take longer to process than images
     await waitForIgContainer(container.id, token, { attempts: 40, delayMs: 4000 });
     const published = await publishIgContainer(container.id, token, igUserId);
 
@@ -54,7 +54,6 @@ export async function GET(request) {
       token
     );
 
-    // Same-day Story from vertical creative → more profile visits → more follows
     const storyImage =
       post.fields["Story Image URL"] ||
       post.fields["Cover URL"] ||
@@ -63,9 +62,10 @@ export async function GET(request) {
       ? await publishIgStory({ igUserId, token, imageUrl: storyImage })
       : null;
 
-    await airtableUpdate("Queue", post.id, {
+    await safeAirtableUpdate("Queue", post.id, {
       Status: "Posted",
       "Posted At": new Date().toISOString(),
+      "IG Media ID": published.id,
     });
 
     return Response.json({

@@ -1,5 +1,4 @@
 // CAROUSEL — save-magnet multi-slide posts (stronger than single images for growth).
-// Runs a few times per week so the grid mixes formats.
 
 import { put } from "@vercel/blob";
 import {
@@ -10,6 +9,7 @@ import {
   claudeRewrite,
   parseClaudeJson,
   generateGeminiImage,
+  getTipDayNumber,
 } from "@/lib/helpers";
 import { carouselGrowthPrompt, buildFirstComment, storyOverlayPrompt } from "@/lib/growth";
 
@@ -29,8 +29,9 @@ export async function GET(request) {
       return Response.json({ ok: true, message: "No new winners left for carousels" });
     }
     const winner = winners[0];
+    const dayNumber = await getTipDayNumber();
 
-    const raw = await claudeRewrite(carouselGrowthPrompt(winner.fields.Caption || ""));
+    const raw = await claudeRewrite(carouselGrowthPrompt(winner.fields.Caption || "", dayNumber));
     const content = parseClaudeJson(raw);
     const slides = Array.isArray(content.slides) ? content.slides.slice(0, 7) : [];
     if (slides.length < 3) throw new Error("Carousel needs at least 3 slides");
@@ -44,7 +45,7 @@ export async function GET(request) {
         `Create a clean Instagram carousel slide, square 1:1.
 Style: soft cream background, bold dark charcoal sans-serif,
 small friendly robot mascot accent, generous whitespace, flat design.
-Slide ${i + 1} of ${slides.length}.
+Day ${dayNumber}. Slide ${i + 1} of ${slides.length}.
 Headline (render exactly): "${slide.headline || ""}"
 Body text (render exactly): "${slide.body || ""}"
 ${i === 0 ? 'Top-left small label: "SWIPE →"' : ""}
@@ -58,7 +59,7 @@ ${i === slides.length - 1 ? 'Bottom label: "Follow for daily AI tips"' : ""}`
     }
 
     const story = await generateGeminiImage(
-      storyOverlayPrompt(content.hook, content.storyText)
+      storyOverlayPrompt(content.hook, content.storyText, dayNumber)
     );
     const storyBlob = await put(`stories/carousel-${stamp}.png`, story.buffer, {
       access: "public",
@@ -68,11 +69,11 @@ ${i === slides.length - 1 ? 'Bottom label: "Follow for daily AI tips"' : ""}`
     const firstComment =
       content.firstComment ||
       buildFirstComment({
-        cta: "Save this carousel — then follow for the next one tomorrow.",
+        cta: `Day ${dayNumber} — Save this, then follow for tomorrow's tip.`,
       });
 
     await airtableCreateQueue({
-      Hook: content.hook,
+      Hook: `Day ${dayNumber}: ${content.hook}`,
       Caption: content.caption,
       "Image URL": slideUrls[0],
       "Slide URLs": JSON.stringify(slideUrls),
@@ -82,6 +83,8 @@ ${i === slides.length - 1 ? 'Bottom label: "Follow for daily AI tips"' : ""}`
       "Story Text": content.storyText || content.hook,
       "Story Image URL": storyBlob.url,
       "Source URL": winner.fields["Post URL"] || "",
+      "Day Number": dayNumber,
+      "Bonus Prompt": content.bonusPrompt || "",
     });
     await airtableUpdate("Winners", winner.id, { Status: "Used" });
 
@@ -90,6 +93,7 @@ ${i === slides.length - 1 ? 'Bottom label: "Follow for daily AI tips"' : ""}`
       queued: content.hook,
       type: "Carousel",
       slides: slideUrls.length,
+      dayNumber,
     });
   } catch (err) {
     console.error("Generate carousel cron error:", err);

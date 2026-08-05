@@ -1,9 +1,8 @@
 // SKILL 04 — THE POSTER (runs daily)
-// Publishes Feed/Carousel, first-comment CTA, then a Story for profile visits.
+// Publishes Feed/Carousel, first-comment CTA, Story, stores IG Media ID.
 
 import {
   checkCronAuth,
-  airtableUpdate,
   waitForIgContainer,
   publishIgContainer,
   postIgFirstComment,
@@ -11,6 +10,7 @@ import {
   createIgCarouselContainer,
   listReadyQueue,
   publishIgStory,
+  safeAirtableUpdate,
 } from "@/lib/helpers";
 
 export const maxDuration = 120;
@@ -21,7 +21,6 @@ export async function GET(request) {
   }
 
   try {
-    // Prefer carousels (high saves), else feed graphics — reels have their own cron
     let queue = await listReadyQueue("Carousel");
     if (queue.length === 0) {
       queue = await listReadyQueue("Feed");
@@ -44,6 +43,10 @@ export async function GET(request) {
         slides = [];
       }
       if (!Array.isArray(slides) || slides.length < 2) {
+        await safeAirtableUpdate("Queue", post.id, {
+          Status: "Failed",
+          "Last Error": "Carousel needs Slide URLs JSON with 2+ images",
+        });
         return Response.json(
           { error: `Carousel ${post.id} needs Slide URLs JSON with 2+ images` },
           { status: 400 }
@@ -69,6 +72,10 @@ export async function GET(request) {
       });
     } else {
       if (!post.fields["Image URL"]) {
+        await safeAirtableUpdate("Queue", post.id, {
+          Status: "Failed",
+          "Last Error": "Missing Image URL",
+        });
         return Response.json({ error: `Record ${post.id} has no Image URL, skipping.` }, { status: 400 });
       }
       container = await createIgImageContainer({
@@ -88,7 +95,6 @@ export async function GET(request) {
       token
     );
 
-    // Story = extra profile visits the same day (followers come from profile, not just the Reel)
     const storyImage =
       post.fields["Story Image URL"] ||
       (type === "Carousel" ? null : post.fields["Image URL"]);
@@ -96,9 +102,10 @@ export async function GET(request) {
       ? await publishIgStory({ igUserId, token, imageUrl: storyImage })
       : null;
 
-    await airtableUpdate("Queue", post.id, {
+    await safeAirtableUpdate("Queue", post.id, {
       Status: "Posted",
       "Posted At": new Date().toISOString(),
+      "IG Media ID": published.id,
     });
 
     return Response.json({

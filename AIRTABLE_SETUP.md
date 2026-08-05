@@ -26,7 +26,7 @@ Fields:
 | Hook | Single line text | Headline |
 | Caption | Long text | Full caption |
 | Image URL | URL | Cover / feed image |
-| Status | Single select | `Ready`, `Posted` |
+| Status | Single select | `Ready`, `Posted`, `Failed` |
 | Source URL | URL | Original winner URL |
 | Posted At | Single line text | ISO timestamp |
 | **Type** | Single select | `Feed`, `Reel`, `Carousel` — **required for growth** |
@@ -36,20 +36,19 @@ Fields:
 | **Slide URLs** | Long text | JSON array of carousel image URLs |
 | **Story Text** | Single line text | Overlay copy for Stories |
 | **Story Image URL** | URL | 9:16 Story graphic (posted after feed/reel) |
+| **Day Number** | Number | Tip streak (“Day 12”) |
+| **Bonus Prompt** | Long text | Sent when someone comments TIP |
+| **IG Media ID** | Single line text | Set on publish — needed for engage + insights |
+| **Reach / Saves / Shares / Plays** | Number | Filled by insights cron |
+| **Replied Comment IDs** | Long text | JSON array — avoids double TIP replies |
+| **Fallback Used** | Checkbox | True when Veo failed and carousel shipped instead |
+| **Last Error** | Long text | Failure reason |
 
 ### Quick add (growth fields)
 
-If Queue already exists, add:
+If Queue already exists, add the fields above, and add **Failed** to the Status select.
 
-1. `Type` — single select with options: Feed, Reel, Carousel  
-2. `Video URL` — URL  
-3. `Cover URL` — URL  
-4. `First Comment` — long text  
-5. `Slide URLs` — long text  
-6. `Story Text` — single line text  
-7. `Story Image URL` — URL  
-
-Without these, feed posts still work; Reels and carousels will error with a clear setup message.
+Without Type / Video URL, Reels cannot run. Other fields degrade gracefully.
 
 ## How content flows
 
@@ -57,8 +56,11 @@ Without these, feed posts still work; Reels and carousels will error with a clea
 2. **Generate feed** (daily) → Queue `Type=Feed`  
 3. **Generate reel** (daily) → Queue `Type=Reel` + Video URL  
 4. **Generate carousel** (Tue/Thu/Sat) → Queue `Type=Carousel` + Slide URLs  
-5. **Post** (daily 15:00 UTC) → publishes Feed/Carousel + first comment  
-6. **Post reel** (daily 18:00 UTC) → publishes Reel + first comment  
+5. **Post** (daily 15:00 UTC) → publishes Feed/Carousel + first comment + Story  
+6. **Post reel** (daily 18:00 UTC) → publishes Reel + first comment + Story  
+7. **Engage** (19:00 & 21:00 UTC) → replies to TIP comments with bonus prompts  
+8. **Insights** (22:00 UTC) → pulls reach/saves/plays  
+9. **Health** (12:00 UTC) → warns if winners/reels fuel is low  
 
 ## Testing
 
