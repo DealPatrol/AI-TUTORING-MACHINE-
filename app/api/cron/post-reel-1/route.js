@@ -23,26 +23,39 @@ export async function GET(request) {
     }
     const reel = queue[0];
     
-    // Use Video URL if available, otherwise use a video from Apify
-    let videoUrl = reel.fields["Video URL"];
-    if (!videoUrl) {
-      // Fallback to a real video from Apify scraper until Video URL field is populated
-      videoUrl = "https://scontent-yyz1-1.cdninstagram.com/o1/v/t2/f2/m86/AQM88WNein0a2XGw2CTxVNnEUFyEHYruyiUOHNvdHSbqD_Gex2u7vmGnPpIC9cRE-D6Ro35pwmnqOyg1cP_6RMkwK3k6MbgHSwyi9R4.mp4";
-    }
-
+    // Use Video URL if available, otherwise use image as carousel post
+    const videoUrl = reel.fields["Video URL"];
+    const imageUrl = reel.fields["Image URL"];
+    
     const token = process.env.IG_ACCESS_TOKEN;
     const igUserId = process.env.IG_USER_ID;
 
-    // 2. Create media container for video/reel
-    const containerRes = await fetch(`${GRAPH}/${igUserId}/media`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    // 2. Create media container - use video if available, otherwise image
+    let containerBody;
+    if (videoUrl) {
+      // Post as reel with video
+      containerBody = {
         media_type: "REELS",
         video_url: videoUrl,
         caption: reel.fields.Caption || "",
         access_token: token,
-      }),
+      };
+    } else if (imageUrl) {
+      // Fallback: post image as carousel/single image post
+      containerBody = {
+        media_type: "IMAGE",
+        image_url: imageUrl,
+        caption: reel.fields.Caption || "",
+        access_token: token,
+      };
+    } else {
+      return Response.json({ error: "No video or image URL available" }, { status: 400 });
+    }
+
+    const containerRes = await fetch(`${GRAPH}/${igUserId}/media`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(containerBody),
     });
     const container = await containerRes.json();
     if (!container.id) throw new Error(`Container failed: ${JSON.stringify(container)}`);
@@ -85,7 +98,7 @@ export async function GET(request) {
       "Posted At": new Date().toISOString(),
     });
 
-    return Response.json({ ok: true, posted: reel.fields.Hook, type: "reel", igMediaId: published.id });
+    return Response.json({ ok: true, posted: reel.fields.Hook, type: videoUrl ? "reel" : "image", igMediaId: published.id });
   } catch (err) {
     console.error("Post-reel-1 cron error:", err);
     return Response.json({ error: err.message }, { status: 500 });
