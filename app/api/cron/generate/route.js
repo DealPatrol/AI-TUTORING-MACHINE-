@@ -113,8 +113,31 @@ Make it visually striking, hook viewers instantly, mobile-optimized.`,
       });
     }
 
-    // 3. Queue all 3 variations with sequence order (images + video URLs for reels)
-    const videoUrl = winner.fields["Video URL"];
+    // 3. Fetch video URL from Apify for the winner's post
+    let videoUrl = null;
+    try {
+      const apifyTaskId = process.env.APIFY_TASK_ID;
+      const apifyToken = process.env.APIFY_TOKEN;
+      const apifyUrl = `https://api.apify.com/v2/actor-tasks/${apifyTaskId}/runs?status=SUCCEEDED&limit=1&token=${apifyToken}`;
+      const runsRes = await fetch(apifyUrl);
+      const runsData = await runsRes.json();
+      
+      if (runsData.data?.items?.length) {
+        const datasetId = runsData.data.items[0].defaultDatasetId;
+        const datasetRes = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${apifyToken}`);
+        const posts = await datasetRes.json();
+        
+        // Find the post matching the winner's URL
+        const matchingPost = posts.find((p) => p.url === winner.fields["Post URL"]);
+        if (matchingPost && matchingPost.videoUrl) {
+          videoUrl = matchingPost.videoUrl;
+        }
+      }
+    } catch (err) {
+      console.log("Could not fetch video URL from Apify:", err.message);
+    }
+
+    // 4. Queue all 3 variations with sequence order (images + video URLs for reels)
     for (const v of variations) {
       const postData = {
         Hook: v.hook,
@@ -133,7 +156,7 @@ Make it visually striking, hook viewers instantly, mobile-optimized.`,
       await airtableCreate("Queue", postData);
     }
 
-    // 4. Mark winner as used
+    // 5. Mark winner as used
     await airtableUpdate("Winners", winner.id, { Status: "Used" });
 
     return Response.json({
