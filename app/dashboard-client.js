@@ -43,10 +43,14 @@ export default function DashboardClient() {
       const res = await fetch(`/api/trigger/${cronName}`, { method: "POST" });
       const result = await res.json();
       if (result.success) {
-        const detail = result.data?.queued || result.data?.posted || result.data?.replied != null
-          ? ` — ${JSON.stringify(result.data).slice(0, 160)}`
+        const detail = result.data
+          ? ` — ${JSON.stringify(result.data).slice(0, 180)}`
           : "";
-        setMessage(`✓ ${cronName} ok${detail}`);
+        if (result.skipped || result.data?.skipped) {
+          setMessage(`⚠ ${cronName} skipped${detail}`);
+        } else {
+          setMessage(`✓ ${cronName} ok${detail}`);
+        }
         setTimeout(refresh, 1500);
       } else {
         setMessage(`✗ ${cronName} failed: ${result.error || result.data?.error || "unknown"}`);

@@ -9,6 +9,7 @@ import {
   listReadyQueue,
   publishIgStory,
   safeAirtableUpdate,
+  markQueueFailed,
 } from "@/lib/helpers";
 
 export const maxDuration = 180;
@@ -18,18 +19,20 @@ export async function GET(request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  let post = null;
   try {
     const queue = await listReadyQueue("Reel");
     if (queue.length === 0) {
-      return Response.json({ ok: true, message: "No reels ready to post" });
+      return Response.json({
+        ok: true,
+        skipped: true,
+        message: "No reels ready to post",
+      });
     }
 
-    const post = queue[0];
+    post = queue[0];
     if (!post.fields["Video URL"]) {
-      await safeAirtableUpdate("Queue", post.id, {
-        Status: "Failed",
-        "Last Error": "Reel missing Video URL",
-      });
+      await markQueueFailed(post.id, "Reel missing Video URL");
       return Response.json({ error: `Reel ${post.id} has no Video URL` }, { status: 400 });
     }
 
@@ -78,6 +81,7 @@ export async function GET(request) {
     });
   } catch (err) {
     console.error("Post reel cron error:", err);
+    if (post?.id) await markQueueFailed(post.id, err.message);
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

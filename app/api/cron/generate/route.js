@@ -4,13 +4,14 @@
 import { put } from "@vercel/blob";
 import {
   checkCronAuth,
-  airtableList,
   airtableCreateQueue,
-  airtableUpdate,
   claudeRewrite,
   parseClaudeJson,
   generateGeminiImage,
   getTipDayNumber,
+  claimNextWinner,
+  markWinnerUsed,
+  releaseWinner,
 } from "@/lib/helpers";
 import { feedGrowthPrompt, buildFirstComment, storyOverlayPrompt } from "@/lib/growth";
 
@@ -21,15 +22,16 @@ export async function GET(request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  let winner = null;
   try {
-    const winners = await airtableList(
-      "Winners",
-      "maxRecords=1&filterByFormula=" + encodeURIComponent(`{Status}="New"`)
-    );
-    if (winners.length === 0) {
-      return Response.json({ ok: true, message: "No new winners left — research cron will refill Monday" });
+    winner = await claimNextWinner();
+    if (!winner) {
+      return Response.json({
+        ok: true,
+        skipped: true,
+        message: "No new winners left — research cron will refill Monday",
+      });
     }
-    const winner = winners[0];
     const dayNumber = await getTipDayNumber();
 
     const raw = await claudeRewrite(feedGrowthPrompt(winner.fields.Caption || "", dayNumber));
@@ -76,10 +78,12 @@ Smaller subtext below it (render exactly): "${content.subtext || ""}"`
       "Day Number": dayNumber,
       "Bonus Prompt": content.bonusPrompt || "",
     });
-    await airtableUpdate("Winners", winner.id, { Status: "Used" });
+    if (!winner._claimedAsUsed) await markWinnerUsed(winner.id);
 
     return Response.json({ ok: true, queued: content.hook, type: "Feed", dayNumber });
   } catch (err) {
+    // Always try to put the winner back so a mid-run failure doesn't burn the idea
+    if (winner?.id) await releaseWinner(winner.id);
     console.error("Generate cron error:", err);
     return Response.json({ error: err.message }, { status: 500 });
   }

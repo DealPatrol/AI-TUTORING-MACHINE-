@@ -4,14 +4,15 @@
 import { put } from "@vercel/blob";
 import {
   checkCronAuth,
-  airtableList,
   airtableCreateQueue,
-  airtableUpdate,
   claudeRewrite,
   parseClaudeJson,
   generateGeminiImage,
   generateVeoReelWithFallback,
   getTipDayNumber,
+  claimNextWinner,
+  markWinnerUsed,
+  releaseWinner,
 } from "@/lib/helpers";
 import { reelGrowthPrompt, buildFirstComment, storyOverlayPrompt } from "@/lib/growth";
 
@@ -22,15 +23,16 @@ export async function GET(request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  let winner = null;
   try {
-    const winners = await airtableList(
-      "Winners",
-      "maxRecords=1&filterByFormula=" + encodeURIComponent(`{Status}="New"`)
-    );
-    if (winners.length === 0) {
-      return Response.json({ ok: true, message: "No new winners left for reels" });
+    winner = await claimNextWinner();
+    if (!winner) {
+      return Response.json({
+        ok: true,
+        skipped: true,
+        message: "No new winners left for reels",
+      });
     }
-    const winner = winners[0];
     const dayNumber = await getTipDayNumber();
 
     const raw = await claudeRewrite(reelGrowthPrompt(winner.fields.Caption || "", dayNumber));
@@ -73,7 +75,6 @@ Clear energetic teacher voiceover: "${content.voiceover || content.hook}". Subtl
 
     let videoUrl = null;
     let veoModel = null;
-    let fallbackUsed = false;
 
     try {
       const veo = await generateVeoReelWithFallback(videoPrompt, { aspectRatio: "9:16" });
@@ -85,9 +86,7 @@ Clear energetic teacher voiceover: "${content.voiceover || content.hook}". Subtl
       veoModel = veo.model;
     } catch (veoErr) {
       console.error("Veo failed — queueing carousel fallback:", veoErr.message);
-      fallbackUsed = true;
 
-      // Same-day growth: vertical tip slides from the reel script (saves > empty day)
       const beats = [
         content.hook,
         ...(Array.isArray(content.beats) ? content.beats : []),
@@ -125,7 +124,7 @@ Headline (render exactly): "${String(beats[i]).slice(0, 80)}"`
         "Fallback Used": true,
         "Last Error": `Veo failed: ${veoErr.message}`.slice(0, 1000),
       });
-      await airtableUpdate("Winners", winner.id, { Status: "Used" });
+      if (!winner._claimedAsUsed) await markWinnerUsed(winner.id);
 
       return Response.json({
         ok: true,
@@ -151,9 +150,9 @@ Headline (render exactly): "${String(beats[i]).slice(0, 80)}"`
       "Source URL": winner.fields["Post URL"] || "",
       "Day Number": dayNumber,
       "Bonus Prompt": content.bonusPrompt || "",
-      "Fallback Used": fallbackUsed,
+      "Fallback Used": false,
     });
-    await airtableUpdate("Winners", winner.id, { Status: "Used" });
+    if (!winner._claimedAsUsed) await markWinnerUsed(winner.id);
 
     return Response.json({
       ok: true,
@@ -164,6 +163,7 @@ Headline (render exactly): "${String(beats[i]).slice(0, 80)}"`
       dayNumber,
     });
   } catch (err) {
+    if (winner?.id) await releaseWinner(winner.id);
     console.error("Generate reel cron error:", err);
     return Response.json({ error: err.message }, { status: 500 });
   }

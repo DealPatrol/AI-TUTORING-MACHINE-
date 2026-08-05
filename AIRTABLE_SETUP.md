@@ -13,7 +13,7 @@ Fields:
 | Caption | Long text | Original caption |
 | Likes | Number | |
 | Comments | Number | |
-| Status | Single select | `New`, `Used` |
+| Status | Single select | `New`, `Processing`, `Used` |
 | Format | Single line text | Optional — Image / Video / Sidecar |
 | Growth Score | Number | Optional — set by research cron |
 
@@ -49,6 +49,8 @@ Fields:
 If Queue already exists, add the fields above, and add **Failed** to the Status select.
 
 Without Type / Video URL, Reels cannot run. Other fields degrade gracefully.
+
+Also add **Processing** to Winners Status (used to claim a winner before long generate jobs).
 
 ## How content flows
 

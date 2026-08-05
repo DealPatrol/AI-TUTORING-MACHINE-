@@ -37,19 +37,24 @@ export async function GET(request) {
   };
 
   try {
-    const [winners, ready, failed] = await Promise.all([
+    const [winners, ready, failed, posted] = await Promise.all([
       airtableList("Winners", "filterByFormula=" + encodeURIComponent(`{Status}="New"`)),
       airtableList("Queue", "filterByFormula=" + encodeURIComponent(`{Status}="Ready"`)),
       airtableList(
         "Queue",
         "filterByFormula=" + encodeURIComponent(`{Status}="Failed"`) + "&maxRecords=20"
-      ),
+      ).catch(() => []),
+      airtableList(
+        "Queue",
+        "filterByFormula=" + encodeURIComponent(`{Status}="Posted"`) + "&maxRecords=30"
+      ).catch(() => []),
     ]);
+    const failedPosted = posted.filter((r) => String(r.fields["Posted At"] || "").startsWith("FAILED:"));
     stats.winnersWaiting = winners.length;
     stats.readyFeed = ready.filter((r) => !r.fields.Type || r.fields.Type === "Feed").length;
     stats.readyReels = ready.filter((r) => r.fields.Type === "Reel").length;
     stats.readyCarousels = ready.filter((r) => r.fields.Type === "Carousel").length;
-    stats.failed = failed.length;
+    stats.failed = failed.length + failedPosted.length;
     stats.tipDay = await getTipDayNumber();
 
     if (stats.winnersWaiting < 3) warnings.push(`Low winners fuel (${stats.winnersWaiting}) — research soon`);

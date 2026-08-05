@@ -11,7 +11,8 @@ import { pickBonusPrompt, tipReplyMessage } from "@/lib/growth";
 
 export const maxDuration = 60;
 
-const TIP_RE = /\b(tip|tips|prompt|send it|bonus)\b/i;
+// Only match short engagement bait replies, not our own long CTA that contains "TIP"
+const TIP_RE = /^\s*(tip|tips|prompt|send\s*it|bonus)\s*[.!?]?\s*$/i;
 
 export async function GET(request) {
   if (!checkCronAuth(request)) {
@@ -23,6 +24,8 @@ export async function GET(request) {
     return Response.json({ error: "IG_ACCESS_TOKEN missing" }, { status: 400 });
   }
 
+  const ownUsername = (process.env.IG_USERNAME || "").replace(/^@/, "").toLowerCase();
+
   try {
     let posted = [];
     try {
@@ -30,17 +33,45 @@ export async function GET(request) {
         "Queue",
         "filterByFormula=" +
           encodeURIComponent(`AND({Status}="Posted", {IG Media ID}!="")`) +
-          "&maxRecords=8"
+          "&maxRecords=12&sort%5B0%5D%5Bfield%5D=" +
+          encodeURIComponent("Posted At") +
+          "&sort%5B0%5D%5Bdirection%5D=desc"
       );
     } catch (err) {
-      if (String(err.message).includes("UNKNOWN_FIELD_NAME") || String(err.message).includes("Unknown field")) {
-        return Response.json({
-          ok: false,
-          error: "Add Queue fields IG Media ID, Bonus Prompt, Replied Comment IDs (see AIRTABLE_SETUP.md)",
-        }, { status: 400 });
+      const msg = String(err.message || "");
+      if (msg.includes("UNKNOWN_FIELD_NAME") || msg.includes("Unknown field") || msg.includes("INVALID_SORT")) {
+        // Retry without sort if Posted At sort fails
+        try {
+          posted = await airtableList(
+            "Queue",
+            "filterByFormula=" +
+              encodeURIComponent(`AND({Status}="Posted", {IG Media ID}!="")`) +
+              "&maxRecords=12"
+          );
+        } catch (err2) {
+          if (String(err2.message).includes("UNKNOWN_FIELD_NAME") || String(err2.message).includes("Unknown field")) {
+            return Response.json(
+              {
+                ok: false,
+                error:
+                  "Add Queue fields IG Media ID, Bonus Prompt, Replied Comment IDs (see AIRTABLE_SETUP.md)",
+              },
+              { status: 400 }
+            );
+          }
+          throw err2;
+        }
+      } else {
+        throw err;
       }
-      throw err;
     }
+
+    // Prefer newest by Posted At when sort wasn't available
+    posted.sort((a, b) => {
+      const ta = Date.parse(a.fields["Posted At"] || 0) || 0;
+      const tb = Date.parse(b.fields["Posted At"] || 0) || 0;
+      return tb - ta;
+    });
 
     let replied = 0;
     const details = [];
@@ -48,6 +79,7 @@ export async function GET(request) {
     for (const row of posted) {
       const mediaId = row.fields["IG Media ID"];
       if (!mediaId) continue;
+      if (String(row.fields["Posted At"] || "").startsWith("FAILED:")) continue;
 
       let already = [];
       try {
@@ -63,6 +95,7 @@ export async function GET(request) {
 
       for (const c of comments) {
         if (!c?.id || alreadySet.has(c.id)) continue;
+        if (ownUsername && String(c.username || "").toLowerCase() === ownUsername) continue;
         if (!TIP_RE.test(c.text || "")) continue;
         try {
           await replyIgComment(c.id, message, token);
