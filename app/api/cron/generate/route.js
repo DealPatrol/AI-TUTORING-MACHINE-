@@ -1,7 +1,7 @@
 // SKILL 02 + 03 — THREE-VECTOR SYSTEM (runs daily)
 // Takes one winner, generates 3 completely different scripts + 3 unique images
-// using Gemini (signal variance). Queues all 3 posts with sequence order (1,2,3)
-// for clustered posting at 12pm, 2pm, 4pm UTC.
+// using Gemini (signal variance) + 1 video using Veo AI. Queues all 3 posts 
+// with video for reel posting at 1pm, 3pm, 5pm UTC.
 
 import { put } from "@vercel/blob";
 import { checkCronAuth, airtableList, airtableCreate, airtableUpdate } from "@/lib/helpers";
@@ -113,28 +113,47 @@ Make it visually striking, hook viewers instantly, mobile-optimized.`,
       });
     }
 
-    // 3. Fetch video URL from Apify for the winner's post
+    // 3. Generate video using Veo based on the winning post
     let videoUrl = null;
     try {
-      const apifyTaskId = process.env.APIFY_TASK_ID;
-      const apifyToken = process.env.APIFY_TOKEN;
-      const apifyUrl = `https://api.apify.com/v2/actor-tasks/${apifyTaskId}/runs?status=SUCCEEDED&limit=1&token=${apifyToken}`;
-      const runsRes = await fetch(apifyUrl);
-      const runsData = await runsRes.json();
+      // Generate a video prompt from the winner's caption
+      const videoPrompt = `Create a short, engaging 6-second video reel for an Instagram post about: "${winner.fields.Caption || "tech education"}". Make it visually dynamic with text overlays and interesting transitions. Professional quality, modern aesthetic.`;
       
-      if (runsData.data?.items?.length) {
-        const datasetId = runsData.data.items[0].defaultDatasetId;
-        const datasetRes = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${apifyToken}`);
-        const posts = await datasetRes.json();
-        
-        // Find the post matching the winner's URL
-        const matchingPost = posts.find((p) => p.url === winner.fields["Post URL"]);
-        if (matchingPost && matchingPost.videoUrl) {
-          videoUrl = matchingPost.videoUrl;
+      const videoRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `Generate a video for: ${videoPrompt}
+                    Return ONLY the URL if you can generate it, or null if unable.`,
+                  },
+                ],
+              },
+            ],
+          }),
+        }
+      );
+
+      if (videoRes.ok) {
+        const videoData = await videoRes.json();
+        const videoPart = videoData.candidates?.[0]?.content?.parts?.find((p) => p.inlineData?.mimeType?.includes("video"));
+        if (videoPart?.inlineData) {
+          // Upload video to Vercel Blob
+          const videoBuffer = Buffer.from(videoPart.inlineData.data, "base64");
+          const videoBlob = await put(`reels/${Date.now()}-reel.mp4`, videoBuffer, {
+            access: "public",
+            contentType: "video/mp4",
+          });
+          videoUrl = videoBlob.url;
         }
       }
     } catch (err) {
-      console.log("Could not fetch video URL from Apify:", err.message);
+      console.log("Could not generate video with Veo:", err.message);
     }
 
     // 4. Queue all 3 variations with sequence order (images + video URLs for reels)
