@@ -13,13 +13,13 @@ export async function GET(request) {
   }
 
   try {
-    // 1. Find a Ready post to post as a reel
+    // 1. Find a Ready post to post as a reel (Sequence=2)
     const queue = await airtableList(
       "Queue",
-      "maxRecords=1&filterByFormula=" + encodeURIComponent(`{Status}="Ready"`)
+      "maxRecords=1&filterByFormula=" + encodeURIComponent(`AND({Status}="Ready", {Sequence}=2)`)
     );
     if (queue.length === 0) {
-      return Response.json({ ok: true, message: "No posts ready" });
+      return Response.json({ ok: true, message: "No Sequence=2 posts ready" });
     }
     const reel = queue[0];
     
