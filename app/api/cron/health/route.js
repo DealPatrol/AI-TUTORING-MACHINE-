@@ -1,6 +1,13 @@
 // HEALTH — pipeline fuel + env checks so silent broken days get caught early.
 
-import { checkCronAuth, airtableList, getTipDayNumber, getIgCredentials, igGraphBase } from "@/lib/helpers";
+import {
+  checkCronAuth,
+  airtableList,
+  getTipDayNumber,
+  getIgCredentials,
+  getGeminiApiKey,
+  igGraphBase,
+} from "@/lib/helpers";
 
 export const maxDuration = 30;
 
@@ -11,6 +18,12 @@ export async function GET(request) {
 
   const warnings = [];
   const ok = [];
+  const geminiKey = getGeminiApiKey();
+  const geminiKeyMeta = {
+    length: geminiKey.length,
+    prefix: geminiKey.slice(0, 4),
+    looksLikeGoogleApiKey: geminiKey.startsWith("AIza") && geminiKey.length === 39,
+  };
 
   const envChecks = [
     ["AIRTABLE_API_KEY", process.env.AIRTABLE_API_KEY],
@@ -100,6 +113,7 @@ export async function GET(request) {
     tipDay: stats.tipDay,
     igAccount,
     igTokenMeta,
+    geminiKeyMeta,
     stats,
     warnings,
     ready: ok,
