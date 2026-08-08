@@ -43,7 +43,6 @@ export async function GET(request) {
     } else if (imageUrl) {
       // Fallback: post image as carousel/single image post
       containerBody = {
-        media_type: "IMAGE",
         image_url: imageUrl,
         caption: reel.fields.Caption || "",
         access_token: token,
