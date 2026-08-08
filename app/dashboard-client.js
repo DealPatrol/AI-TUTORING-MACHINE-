@@ -168,15 +168,6 @@ export default function DashboardClient() {
           {triggering["post-1"] ? "🔄 Running..." : "📱 Image #1 (12pm)"}
         </button>
         <button
-          className="control-btn"
-          style={{ background: "#dc2626", color: "white" }}
-          onClick={() => triggerCron("post-reel-1")}
-          disabled={triggering["post-reel-1"]}
-          title="Publish reel #1"
-        >
-          {triggering["post-reel-1"] ? "🔄 Running..." : "🎬 Reel #1 (1pm)"}
-        </button>
-        <button
           className="control-btn btn-post"
           onClick={() => triggerCron("post-2")}
           disabled={triggering["post-2"]}
@@ -185,30 +176,12 @@ export default function DashboardClient() {
           {triggering["post-2"] ? "🔄 Running..." : "📱 Image #2 (2pm)"}
         </button>
         <button
-          className="control-btn"
-          style={{ background: "#dc2626", color: "white" }}
-          onClick={() => triggerCron("post-reel-2")}
-          disabled={triggering["post-reel-2"]}
-          title="Publish reel #2"
-        >
-          {triggering["post-reel-2"] ? "🔄 Running..." : "🎬 Reel #2 (3pm)"}
-        </button>
-        <button
           className="control-btn btn-post"
           onClick={() => triggerCron("post-3")}
           disabled={triggering["post-3"]}
           title="Publish image #3"
         >
           {triggering["post-3"] ? "🔄 Running..." : "📱 Image #3 (4pm)"}
-        </button>
-        <button
-          className="control-btn"
-          style={{ background: "#dc2626", color: "white" }}
-          onClick={() => triggerCron("post-reel-3")}
-          disabled={triggering["post-reel-3"]}
-          title="Publish reel #3"
-        >
-          {triggering["post-reel-3"] ? "🔄 Running..." : "🎬 Reel #3 (5pm)"}
         </button>
         {[
           ["research", "Research", "#6366f1"],
