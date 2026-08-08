@@ -157,6 +157,7 @@ Make it visually striking, hook viewers instantly, mobile-optimized.`,
     }
 
     // 4. Queue all 3 variations with sequence order (images + video URLs for reels)
+    const queueRecords = [];
     for (const v of variations) {
       const postData = {
         Hook: v.hook,
@@ -172,8 +173,9 @@ Make it visually striking, hook viewers instantly, mobile-optimized.`,
         postData["Video URL"] = videoUrl;
       }
       
-      await airtableCreate("Queue", postData);
+      queueRecords.push(postData);
     }
+    await airtableCreate("Queue", queueRecords);
 
     // 5. Mark winner as used
     await airtableUpdate("Winners", winner.id, { Status: "Used" });
