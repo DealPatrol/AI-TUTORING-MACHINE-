@@ -118,38 +118,57 @@ Make it visually striking, hook viewers instantly, mobile-optimized.`,
     try {
       // Generate a video prompt from the winner's caption
       const videoPrompt = `Create a short, engaging 6-second video reel for an Instagram post about: "${winner.fields.Caption || "tech education"}". Make it visually dynamic with text overlays and interesting transitions. Professional quality, modern aesthetic.`;
-      
-      const videoRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+
+      // Veo is a long-running video-generation model — kick off the operation via predictLongRunning
+      const videoModel = "veo-3.0-generate-001";
+      const startRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${videoModel}:predictLongRunning?key=${process.env.GEMINI_API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: `Generate a video for: ${videoPrompt}
-                    Return ONLY the URL if you can generate it, or null if unable.`,
-                  },
-                ],
-              },
-            ],
+            instances: [{ prompt: videoPrompt }],
+            parameters: { aspectRatio: "9:16" },
           }),
         }
       );
 
-      if (videoRes.ok) {
-        const videoData = await videoRes.json();
-        const videoPart = videoData.candidates?.[0]?.content?.parts?.find((p) => p.inlineData?.mimeType?.includes("video"));
-        if (videoPart?.inlineData) {
-          // Upload video to Vercel Blob
-          const videoBuffer = Buffer.from(videoPart.inlineData.data, "base64");
-          const videoBlob = await put(`reels/${Date.now()}-reel.mp4`, videoBuffer, {
-            access: "public",
-            contentType: "video/mp4",
-          });
-          videoUrl = videoBlob.url;
+      if (startRes.ok) {
+        const startData = await startRes.json();
+        let operationName = startData.name;
+
+        // Poll the long-running operation until the video is ready (or we time out)
+        let operationDone = false;
+        let videoFileUri = null;
+        for (let attempt = 0; attempt < 15 && operationName && !operationDone; attempt++) {
+          await new Promise((resolve) => setTimeout(resolve, 6000));
+          const pollRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/${operationName}?key=${process.env.GEMINI_API_KEY}`
+          );
+          if (!pollRes.ok) continue;
+          const pollData = await pollRes.json();
+          if (pollData.done) {
+            operationDone = true;
+            const sample = pollData.response?.generateVideoResponse?.generatedSamples?.[0];
+            videoFileUri = sample?.video?.uri || null;
+          }
+        }
+
+        if (videoFileUri) {
+          // Download the generated video (requires the API key) and upload it to Vercel Blob
+          const downloadRes = await fetch(
+            videoFileUri.includes("key=")
+              ? videoFileUri
+              : `${videoFileUri}${videoFileUri.includes("?") ? "&" : "?"}key=${process.env.GEMINI_API_KEY}`
+          );
+          if (downloadRes.ok) {
+            const videoBuffer = Buffer.from(await downloadRes.arrayBuffer());
+            const videoBlob = await put(`reels/${Date.now()}-reel.mp4`, videoBuffer, {
+              access: "public",
+              contentType: "video/mp4",
+            });
+            videoUrl = videoBlob.url;
+          }
         }
       }
     } catch (err) {
