@@ -1,87 +1,70 @@
-// SKILL 04c — THE POSTER #3 (runs daily at 4 PM UTC)
-// Publishes the third post (Sequence=3) from the Queue to Instagram.
+// Poster slot #3 — posts next Ready image. Works with or without Sequence field.
 
-import { checkCronAuth, airtableList, airtableUpdate } from "@/lib/helpers";
+import {
+  checkCronAuth,
+  listReadyBySequence,
+  safeAirtableUpdate,
+  waitForIgContainer,
+  publishIgContainer,
+  createIgImageContainer,
+  markQueueFailed,
+} from "@/lib/helpers";
 
 export const maxDuration = 60;
-
-const GRAPH = "https://graph.instagram.com/v21.0";
 
 export async function GET(request) {
   if (!checkCronAuth(request)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  let post = null;
   try {
-    // 1. Find the third Ready post (Sequence=3)
-    const queue = await airtableList(
-      "Queue",
-      "maxRecords=1&filterByFormula=" + encodeURIComponent(`AND({Status}="Ready", {Sequence}=3)`)
-    );
+    const queue = await listReadyBySequence(3);
     if (queue.length === 0) {
-      return Response.json({ ok: true, message: "No Sequence=3 posts ready" });
+      return Response.json({ ok: true, skipped: true, message: "No Ready posts" });
     }
-    const post = queue[0];
+    post = queue[0];
     if (!post.fields["Image URL"]) {
-      return Response.json({ error: `Record ${post.id} has no Image URL, skipping.` }, { status: 400 });
+      await markQueueFailed(post.id, "Missing Image URL", {
+        retryCount: post.fields["Retry Count"] || 0,
+      });
+      return Response.json({ error: "Missing Image URL" }, { status: 400 });
     }
+
     const token = process.env.IG_ACCESS_TOKEN;
     const igUserId = process.env.IG_USER_ID;
-
-    // 2. Create a media container
-    const containerRes = await fetch(`${GRAPH}/${igUserId}/media`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        image_url: post.fields["Image URL"],
-        caption: post.fields.Caption || "",
-        access_token: token,
-      }),
-    });
-    const container = await containerRes.json();
-    if (!container.id) throw new Error(`Container failed: ${JSON.stringify(container)}`);
-
-    // 2b. Wait for Instagram to finish processing
-    let ready = false;
-    for (let attempt = 0; attempt < 10; attempt++) {
-      await new Promise((r) => setTimeout(r, 3000));
-      const statusRes = await fetch(
-        `${GRAPH}/${container.id}?fields=status_code,status&access_token=${token}`
-      );
-      const status = await statusRes.json();
-      if (status.status_code === "FINISHED") {
-        ready = true;
-        break;
-      }
-      if (status.status_code === "ERROR" || status.status_code === "EXPIRED") {
-        throw new Error(`Media processing ${status.status_code}: ${JSON.stringify(status)}`);
-      }
-    }
-    if (!ready) {
-      throw new Error("Media did not finish processing in time");
+    if (!token || !igUserId) {
+      throw new Error("IG_ACCESS_TOKEN or IG_USER_ID missing");
     }
 
-    // 3. Publish it
-    const publishRes = await fetch(`${GRAPH}/${igUserId}/media_publish`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        creation_id: container.id,
-        access_token: token,
-      }),
+    const container = await createIgImageContainer({
+      igUserId,
+      token,
+      imageUrl: post.fields["Image URL"],
+      caption: post.fields.Caption || "",
     });
-    const published = await publishRes.json();
-    if (!published.id) throw new Error(`Publish failed: ${JSON.stringify(published)}`);
+    await waitForIgContainer(container.id, token, { attempts: 15, delayMs: 2000 });
+    const published = await publishIgContainer(container.id, token, igUserId);
 
-    // 4. Mark it posted
-    await airtableUpdate("Queue", post.id, {
+    await safeAirtableUpdate("Queue", post.id, {
       Status: "Posted",
       "Posted At": new Date().toISOString(),
+      "IG Media ID": published.id,
     });
 
-    return Response.json({ ok: true, posted: post.fields.Hook, sequence: 3, igMediaId: published.id });
+    return Response.json({
+      ok: true,
+      posted: post.fields.Hook,
+      sequence: 3,
+      igMediaId: published.id,
+    });
   } catch (err) {
     console.error("Post-3 cron error:", err);
+    if (post?.id) {
+      await markQueueFailed(post.id, err.message, {
+        retryCount: post.fields["Retry Count"] || 0,
+      });
+    }
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

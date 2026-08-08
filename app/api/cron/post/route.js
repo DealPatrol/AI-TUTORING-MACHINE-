@@ -42,7 +42,12 @@ export async function GET(request) {
     }
 
     post = queue[0];
-    const type = post.fields.Type || "Feed";
+    // Infer type when Airtable has no Type field
+    let type = post.fields.Type;
+    if (!type) {
+      if (post.fields["Slide URLs"]) type = "Carousel";
+      else type = "Feed";
+    }
     const retryCount = post.fields["Retry Count"] || 0;
     const token = process.env.IG_ACCESS_TOKEN;
     const igUserId = process.env.IG_USER_ID;
