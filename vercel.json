@@ -2,6 +2,12 @@
   "crons": [
     { "path": "/api/cron/research", "schedule": "0 6 * * 1" },
     { "path": "/api/cron/generate", "schedule": "0 7 * * *" },
+    { "path": "/api/cron/post-1", "schedule": "0 12 * * *" },
+    { "path": "/api/cron/post-reel-1", "schedule": "0 13 * * *" },
+    { "path": "/api/cron/post-2", "schedule": "0 14 * * *" },
+    { "path": "/api/cron/post-reel-2", "schedule": "0 15 * * *" },
+    { "path": "/api/cron/post-3", "schedule": "0 16 * * *" },
+    { "path": "/api/cron/post-reel-3", "schedule": "0 17 * * *" }
     { "path": "/api/cron/generate-reel", "schedule": "0 8 * * *" },
     { "path": "/api/cron/generate-carousel", "schedule": "0 9 * * 2,4,6" },
     { "path": "/api/cron/post", "schedule": "0 15 * * *" },

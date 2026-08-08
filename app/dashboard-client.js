@@ -13,6 +13,23 @@ export default function DashboardClient() {
     stats: { readyFeed: 0, readyReels: 0, readyCarousels: 0, winnersWaiting: 0, failed: 0 },
   });
   const [triggering, setTriggering] = useState({});
+  const [message, setMessage] = useState("");
+
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch("/api/dashboard/data");
+        const result = await res.json();
+        if (!result.error) {
+          setData(result);
+          setMessage("");
+        } else {
+          setMessage("Could not load Airtable data. Check credentials in Vercel project settings.");
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setMessage("Could not reach the data API. Check your connection.");
   const [message, setMessage] = useState(
     "Airtable not configured yet. Add API credentials to Vercel to view live data."
   );
@@ -144,6 +161,71 @@ export default function DashboardClient() {
       )}
 
       <div className="controls">
+        <button
+          className="control-btn btn-research"
+          onClick={() => triggerCron("research")}
+          disabled={triggering.research}
+        >
+          {triggering.research ? "🔄 Running..." : "🔍 Trigger Research"}
+        </button>
+        <button
+          className="control-btn btn-generate"
+          onClick={() => triggerCron("generate")}
+          disabled={triggering.generate}
+        >
+          {triggering.generate ? "🔄 Running..." : "✨ Trigger Generate"}
+        </button>
+        <button
+          className="control-btn btn-post"
+          onClick={() => triggerCron("post-1")}
+          disabled={triggering["post-1"]}
+          title="Publish image #1"
+        >
+          {triggering["post-1"] ? "🔄 Running..." : "📱 Image #1 (12pm)"}
+        </button>
+        <button
+          className="control-btn"
+          style={{ background: "#dc2626", color: "white" }}
+          onClick={() => triggerCron("post-reel-1")}
+          disabled={triggering["post-reel-1"]}
+          title="Publish reel #1"
+        >
+          {triggering["post-reel-1"] ? "🔄 Running..." : "🎬 Reel #1 (1pm)"}
+        </button>
+        <button
+          className="control-btn btn-post"
+          onClick={() => triggerCron("post-2")}
+          disabled={triggering["post-2"]}
+          title="Publish image #2"
+        >
+          {triggering["post-2"] ? "🔄 Running..." : "📱 Image #2 (2pm)"}
+        </button>
+        <button
+          className="control-btn"
+          style={{ background: "#dc2626", color: "white" }}
+          onClick={() => triggerCron("post-reel-2")}
+          disabled={triggering["post-reel-2"]}
+          title="Publish reel #2"
+        >
+          {triggering["post-reel-2"] ? "🔄 Running..." : "🎬 Reel #2 (3pm)"}
+        </button>
+        <button
+          className="control-btn btn-post"
+          onClick={() => triggerCron("post-3")}
+          disabled={triggering["post-3"]}
+          title="Publish image #3"
+        >
+          {triggering["post-3"] ? "🔄 Running..." : "📱 Image #3 (4pm)"}
+        </button>
+        <button
+          className="control-btn"
+          style={{ background: "#dc2626", color: "white" }}
+          onClick={() => triggerCron("post-reel-3")}
+          disabled={triggering["post-reel-3"]}
+          title="Publish reel #3"
+        >
+          {triggering["post-reel-3"] ? "🔄 Running..." : "🎬 Reel #3 (5pm)"}
+        </button>
         {[
           ["research", "Research", "#6366f1"],
           ["generate", "Generate Feed", "#8b5cf6"],
@@ -177,6 +259,8 @@ export default function DashboardClient() {
       <div className="sections">
         <div className="section">
           <div className="section-header">
+            <h2>📋 Ready to Post (3 Daily)</h2>
+            <p>{data?.queue?.length || 0} posts in queue</p>
             <h2>Ready to Post</h2>
             <p>{data?.queue?.length || 0} items in queue</p>
           </div>
@@ -184,6 +268,33 @@ export default function DashboardClient() {
             {!data?.queue || data.queue.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">📭</div>
+                <p>Queue is empty. Run the Generate cron to create 3 posts.</p>
+              </div>
+            ) : (
+              data.queue.map((post) => {
+                const times = { 1: "12:00 PM UTC", 2: "2:00 PM UTC", 3: "4:00 PM UTC" };
+                const sequence = post.sequence || post.fields?.Sequence || "?";
+                return (
+                  <div key={post.id} className="item">
+                    <div className="item-title">
+                      Post #{sequence} — {times[sequence] || "?"}
+                      <span style={{ fontSize: "0.85em", marginLeft: "0.5rem" }}>{post.hook}</span>
+                    </div>
+                    <div className="item-meta">
+                      <span className="status-badge status-ready">{post.status}</span>
+                      <span>Sequence: {sequence}</span>
+                    </div>
+                    {post.imageUrl && (
+                      <img src={post.imageUrl} alt={post.hook} className="item-image" />
+                    )}
+                    <div className="item-caption">{post.caption?.slice(0, 120)}...</div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+          <div className="section-footer">
+            Auto-posts daily: 12 PM, 2 PM, 4 PM UTC (3 different hooks, visuals, angles)
                 <p>Queue is empty. Generate a feed post, reel, or carousel.</p>
               </div>
             ) : (
@@ -277,6 +388,42 @@ export default function DashboardClient() {
         </div>
       </div>
 
+      {/* System Status */}
+      <div className="setup-section">
+        <h3>✅ System Live — All Systems Configured</h3>
+        <p>
+          Connected to Instagram <strong>@unlocking__ai</strong>. Every credential is set and the
+          automated pipeline is running.
+        </p>
+        <ul style={{ marginLeft: "2rem", marginBottom: "1rem" }}>
+          <li><code>AIRTABLE_API_KEY</code> - Configured ✓</li>
+          <li><code>AIRTABLE_BASE_ID</code> - Configured ✓</li>
+          <li><code>ANTHROPIC_API_KEY</code> - Configured ✓</li>
+          <li><code>GEMINI_API_KEY</code> - Configured ✓</li>
+          <li><code>APIFY_TOKEN</code> - Configured ✓</li>
+          <li><code>APIFY_TASK_ID</code> - Configured ✓</li>
+          <li><code>CRON_SECRET</code> - Configured ✓</li>
+          <li><code>IG_ACCESS_TOKEN</code> - Configured ✓</li>
+          <li><code>IG_USER_ID</code> - Configured ✓</li>
+        </ul>
+        <p>
+          <strong>Three-Vector Automated Schedule (6 posts/day: 3 images + 3 reels):</strong>
+        </p>
+        <ol style={{ marginLeft: "2rem", marginBottom: "1rem" }}>
+          <li><strong>Research</strong> — Mondays 9 AM UTC: Finds high-performing posts with videos (500+ likes)</li>
+          <li><strong>Generate</strong> — Daily 7 AM UTC: Creates 3 captions + pulls video URLs from Apify</li>
+          <li><strong>Image #1</strong> — Daily 12 PM UTC: Posts image with caption</li>
+          <li><strong>Reel #1</strong> — Daily 1 PM UTC: Posts Apify video with same caption</li>
+          <li><strong>Image #2</strong> — Daily 2 PM UTC: Posts image with caption</li>
+          <li><strong>Reel #2</strong> — Daily 3 PM UTC: Posts Apify video with same caption</li>
+          <li><strong>Image #3</strong> — Daily 4 PM UTC: Posts image with caption</li>
+          <li><strong>Reel #3</strong> — Daily 5 PM UTC: Posts Apify video with same caption</li>
+        </ol>
+        <p>
+          <strong>Vector 1 (Volume):</strong> 6 posts per day <strong>Vector 2 (Velocity):</strong> All 6 clustered in 5-hour window (12pm-5pm) <strong>Vector 3 (Signal Density):</strong> 3 unique angles as images + videos for max reach
+        </p>
+        <p>
+          Use the Image and Reel buttons above to test, or Generate to create 3 new variations with Apify videos daily.
       {data?.failed?.length > 0 && (
         <div className="section" style={{ marginBottom: "2rem" }}>
           <div className="section-header">

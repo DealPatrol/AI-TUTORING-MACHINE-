@@ -1,4 +1,6 @@
 // SKILL 04 — THE POSTER (runs daily)
+// Publishes the next "Ready" post from the Queue to Instagram using
+// the official Instagram API with Instagram Login (no Facebook Page required).
 // Publishes Feed/Carousel, first-comment CTA, Story, stores IG Media ID.
 
 import {
@@ -14,6 +16,12 @@ import {
   markQueueFailed,
 } from "@/lib/helpers";
 
+export const maxDuration = 60;
+
+// Instagram Login (creator/business) tokens authenticate against
+// graph.instagram.com, NOT graph.facebook.com. The content-publishing
+// endpoints (/media and /media_publish) are the same on this host.
+const GRAPH = "https://graph.instagram.com/v21.0";
 export const maxDuration = 120;
 
 export async function GET(request) {
@@ -86,6 +94,40 @@ export async function GET(request) {
       });
     }
 
+    // 2b. Wait for Instagram to finish processing the media before publishing.
+    // Instagram downloads/processes the image asynchronously; publishing too
+    // early fails with code 9007 "media is not ready for publishing".
+    let ready = false;
+    for (let attempt = 0; attempt < 10; attempt++) {
+      await new Promise((r) => setTimeout(r, 3000)); // wait 3s between checks
+      const statusRes = await fetch(
+        `${GRAPH}/${container.id}?fields=status_code,status&access_token=${token}`
+      );
+      const status = await statusRes.json();
+      if (status.status_code === "FINISHED") {
+        ready = true;
+        break;
+      }
+      if (status.status_code === "ERROR" || status.status_code === "EXPIRED") {
+        throw new Error(`Media processing ${status.status_code}: ${JSON.stringify(status)}`);
+      }
+      // otherwise IN_PROGRESS — keep polling
+    }
+    if (!ready) {
+      throw new Error("Media did not finish processing in time (still IN_PROGRESS after ~30s)");
+    }
+
+    // 3. Publish it
+    const publishRes = await fetch(`${GRAPH}/${igUserId}/media_publish`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        creation_id: container.id,
+        access_token: token,
+      }),
+    });
+    const published = await publishRes.json();
+    if (!published.id) throw new Error(`Publish failed: ${JSON.stringify(published)}`);
     await waitForIgContainer(container.id, token);
     const published = await publishIgContainer(container.id, token, igUserId);
 

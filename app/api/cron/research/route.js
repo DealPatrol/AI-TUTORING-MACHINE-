@@ -32,6 +32,22 @@ export async function GET(request) {
   }
 
   try {
+    // Fetch the most recent successful run of your Apify task
+    const taskId = process.env.APIFY_TASK_ID;
+    const token = process.env.APIFY_TOKEN;
+    const apifyUrl = `https://api.apify.com/v2/actor-tasks/${taskId}/runs?status=SUCCEEDED&desc=1&limit=1&token=${token}`;
+    const runsRes = await fetch(apifyUrl);
+    if (!runsRes.ok) throw new Error(`Apify fetch failed: ${runsRes.status}`);
+    const runsData = await runsRes.json();
+    
+    if (!runsData.data?.items?.length) {
+      return Response.json({ ok: true, message: "No completed runs yet" });
+    }
+    
+    const datasetId = runsData.data.items[0].defaultDatasetId;
+    const datasetRes = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${process.env.APIFY_TOKEN}`);
+    if (!datasetRes.ok) throw new Error(`Dataset fetch failed: ${datasetRes.status}`);
+    const posts = await datasetRes.json();
     const apifyUrl = `https://api.apify.com/v2/actor-tasks/${process.env.APIFY_TASK_ID}/runs/last/dataset/items?token=${process.env.APIFY_TOKEN}&status=SUCCEEDED`;
     const res = await fetch(apifyUrl);
     if (!res.ok) throw new Error(`Apify fetch failed: ${res.status}`);
@@ -57,6 +73,7 @@ export async function GET(request) {
         Likes: p.likesCount || 0,
         Comments: p.commentsCount || 0,
         Status: "New",
+        "Video URL": p.videoUrl || p.media?.[0]?.url || "", // capture video URL if available
         Format: String(p.type || p.productType || "Image"),
         "Growth Score": Math.round(score),
       }));

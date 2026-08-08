@@ -11,6 +11,9 @@ importers:
       '@vercel/blob':
         specifier: ^0.27.0
         version: 0.27.3
+      ai:
+        specifier: ^7.0.52
+        version: 7.0.52(zod@4.4.3)
       next:
         specifier: ^14.2.0
         version: 14.2.35(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -22,6 +25,22 @@ importers:
         version: 18.3.1(react@18.3.1)
 
 packages:
+
+  '@ai-sdk/gateway@4.0.41':
+    resolution: {integrity: sha512-DPkDmmA336kqmIp62on550/6Q6JHvldsnvN1SmkwU8QGrVt1PzFxqyKUn0C5EGGmSBpvF1ohZNtvWNl8gEVugA==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  '@ai-sdk/provider-utils@5.0.21':
+    resolution: {integrity: sha512-Q4z27c5vqKuXZN65QuF7FVm+uvm3qxEioiQ+8c3s5xXlhbE1Y/SLGBB4BuF+UWia4KaDu2HmNpdR1RGW02/eGg==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  '@ai-sdk/provider@4.0.5':
+    resolution: {integrity: sha512-9WAerTaPU2jcVi8dh8x27tySEuLur1Kfg7Go74GuCmsC/2MDSvrTkrK8ZrXWjryEevKfcPPmO1enveE7eqlzoA==}
+    engines: {node: '>=22'}
 
   '@fastify/busboy@2.1.1':
     resolution: {integrity: sha512-vBZP4NlzfOlerQTnba4aqZoMhE/a9HY7HRqoOPaETQcSQuWEIyZMHGfVu6w9wGtGK5fED5qRs2DteVCjOH60sA==}
@@ -88,6 +107,9 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@standard-schema/spec@1.1.0':
+    resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
+
   '@swc/counter@0.1.3':
     resolution: {integrity: sha512-e2BR4lsJkkRlKZ/qCHPw9ZaSxc0MVUd7gtbtaB7aMvHeJVYe8sOB8DBZkP2DtISHGSku9sCK6T6cnY0CtXrOCQ==}
 
@@ -97,6 +119,19 @@ packages:
   '@vercel/blob@0.27.3':
     resolution: {integrity: sha512-WizeAxzOTmv0JL7wOaxvLIU/KdBcrclM1ZUOdSlIZAxsTTTe1jsyBthStLby0Ueh7FnmKYAjLz26qRJTk5SDkQ==}
     engines: {node: '>=16.14'}
+
+  '@vercel/oidc@3.2.0':
+    resolution: {integrity: sha512-UycprH3T6n3jH0k44NHMa7pnFHGu/N05MjojYr+Mc6I7obkoLIJujSWwin1pCvdy/eOxrI/l3uDLQsmcrOb4ug==}
+    engines: {node: '>= 20'}
+
+  '@workflow/serde@4.1.0':
+    resolution: {integrity: sha512-pav4F2BoirECWR7Nf1TKt+2eETcBj7jj4cBefQ8VXQCA6NPkaKeLfj/zMgi+3zYV5ZIBT4GuUiphsj0/b9hPQQ==}
+
+  ai@7.0.52:
+    resolution: {integrity: sha512-sEgRnYA+ddJ1rJSz1uKBjkGbOXhXdon1nvno49fVk3tabnlf8v5SaceLBpPDMtmDuLKQFztc/YbRsoCQoPzKZw==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
 
   async-retry@1.3.3:
     resolution: {integrity: sha512-wfr/jstw9xNi/0teMHrRW7dsz3Lt5ARhYNZ2ewpadnhaIp5mbALhOAP+EAdsC7t4Z6wqsDVv9+W6gm1Dk9mEyw==}
@@ -111,6 +146,10 @@ packages:
   client-only@0.0.1:
     resolution: {integrity: sha512-IV3Ou0jSMzZrd3pZ48nLkT9DA7Ag1pnPzaiQhpW7c3RbcqqzvzzVu+L8gfqMp/8IM2MQtSiqaCxrrcfu8I8rMA==}
 
+  eventsource-parser@3.1.0:
+    resolution: {integrity: sha512-kJezFj9YFAMLeORyi7aCLxLbD5/qWMQnoMVlVPyHIll7lgRJCc3JVln9Vgl9nwQi0YkMnhdGTMNn7CkRRAptMg==}
+    engines: {node: '>=18.0.0'}
+
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
@@ -123,6 +162,9 @@ packages:
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
+
+  json-schema@0.4.0:
+    resolution: {integrity: sha512-es94M3nTIfsEPisRafak+HDLfHXnKBhV3vU5eqPcS3flIWqcxJWgXHXiey3YrpaNsanY5ei1VoYEbOzijuq9BA==}
 
   loose-envify@1.4.0:
     resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
@@ -206,7 +248,34 @@ packages:
     resolution: {integrity: sha512-raqeBD6NQK4SkWhQzeYKd1KmIG6dllBOTt55Rmkt4HtI9mwdWtJljnrXjAFUBLTSN67HWrOIZ3EPF4kjUw80Bg==}
     engines: {node: '>=14.0'}
 
+  undici@7.29.0:
+    resolution: {integrity: sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw==}
+    engines: {node: '>=20.18.1'}
+
+  zod@4.4.3:
+    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
+
 snapshots:
+
+  '@ai-sdk/gateway@4.0.41(zod@4.4.3)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.5
+      '@ai-sdk/provider-utils': 5.0.21(zod@4.4.3)
+      '@vercel/oidc': 3.2.0
+      zod: 4.4.3
+
+  '@ai-sdk/provider-utils@5.0.21(zod@4.4.3)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.5
+      '@standard-schema/spec': 1.1.0
+      '@workflow/serde': 4.1.0
+      eventsource-parser: 3.1.0
+      undici: 7.29.0
+      zod: 4.4.3
+
+  '@ai-sdk/provider@4.0.5':
+    dependencies:
+      json-schema: 0.4.0
 
   '@fastify/busboy@2.1.1': {}
 
@@ -239,6 +308,8 @@ snapshots:
   '@next/swc-win32-x64-msvc@14.2.33':
     optional: true
 
+  '@standard-schema/spec@1.1.0': {}
+
   '@swc/counter@0.1.3': {}
 
   '@swc/helpers@0.5.5':
@@ -254,6 +325,17 @@ snapshots:
       throttleit: 2.1.0
       undici: 5.29.0
 
+  '@vercel/oidc@3.2.0': {}
+
+  '@workflow/serde@4.1.0': {}
+
+  ai@7.0.52(zod@4.4.3):
+    dependencies:
+      '@ai-sdk/gateway': 4.0.41(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.5
+      '@ai-sdk/provider-utils': 5.0.21(zod@4.4.3)
+      zod: 4.4.3
+
   async-retry@1.3.3:
     dependencies:
       retry: 0.13.1
@@ -266,6 +348,8 @@ snapshots:
 
   client-only@0.0.1: {}
 
+  eventsource-parser@3.1.0: {}
+
   graceful-fs@4.2.11: {}
 
   is-buffer@2.0.5: {}
@@ -273,6 +357,8 @@ snapshots:
   is-node-process@1.2.0: {}
 
   js-tokens@4.0.0: {}
+
+  json-schema@0.4.0: {}
 
   loose-envify@1.4.0:
     dependencies:
@@ -345,3 +431,7 @@ snapshots:
   undici@5.29.0:
     dependencies:
       '@fastify/busboy': 2.1.1
+
+  undici@7.29.0: {}
+
+  zod@4.4.3: {}

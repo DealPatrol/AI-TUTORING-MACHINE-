@@ -47,6 +47,7 @@ export async function GET() {
       warnings,
       queue: queue.map((r) => ({
         id: r.id,
+        sequence: r.fields.Sequence,
         hook: r.fields.Hook,
         caption: r.fields.Caption,
         imageUrl: r.fields["Image URL"],
