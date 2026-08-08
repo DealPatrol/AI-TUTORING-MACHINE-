@@ -29,8 +29,11 @@ export async function GET(request) {
 
   // Live Instagram token check — catches expired/malformed tokens before post time.
   let igAccount = null;
+  let igTokenMeta = null;
   try {
-    const { token } = getIgCredentials();
+    const { token, igUserId } = getIgCredentials();
+    // Shape only — never the token itself. IG tokens start with IGQ/IGAA/EAA and are 100+ chars.
+    igTokenMeta = { length: token.length, prefix: token.slice(0, 4), igUserIdLength: igUserId.length };
     const meRes = await fetch(
       `https://graph.instagram.com/v21.0/me?fields=user_id,username&access_token=${encodeURIComponent(token)}`
     );
@@ -89,6 +92,7 @@ export async function GET(request) {
     ok: warnings.length === 0,
     tipDay: stats.tipDay,
     igAccount,
+    igTokenMeta,
     stats,
     warnings,
     ready: ok,
