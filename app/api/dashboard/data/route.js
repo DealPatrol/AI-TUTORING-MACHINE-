@@ -13,6 +13,7 @@ export async function GET(request) {
     return NextResponse.json({
       queue: queue.map((r) => ({
         id: r.id,
+        sequence: r.fields.Sequence,
         hook: r.fields.Hook,
         caption: r.fields.Caption,
         imageUrl: r.fields["Image URL"],
