@@ -34,17 +34,22 @@ export async function GET(request) {
     const { token, igUserId } = getIgCredentials();
     // Shape only — never the token itself. IG tokens start with IGQ/IGAA/EAA and are 100+ chars.
     igTokenMeta = { length: token.length, prefix: token.slice(0, 4), igUserIdLength: igUserId.length };
-    // Query the IG account itself — works on both graph.facebook.com (EAA
-    // tokens) and graph.instagram.com (IGQ/IGAA tokens).
-    const meRes = await fetch(
-      `${igGraphBase()}/${igUserId}?fields=username&access_token=${encodeURIComponent(token)}`
-    );
-    const me = await meRes.json();
-    if (me.username) {
-      igAccount = me.username;
-      ok.push(`IG token valid (@${me.username})`);
+    if (!token || !igUserId) {
+      const missing = [!token && "IG_ACCESS_TOKEN", !igUserId && "IG_USER_ID"].filter(Boolean);
+      warnings.push(`IG token check skipped: ${missing.join(" and ")} missing`);
     } else {
-      warnings.push(`IG token check failed: ${JSON.stringify(me.error || me).slice(0, 300)}`);
+      // Query the IG account itself — works on both graph.facebook.com (EAA
+      // tokens) and graph.instagram.com (IGQ/IGAA tokens).
+      const meRes = await fetch(
+        `${igGraphBase()}/${igUserId}?fields=username&access_token=${encodeURIComponent(token)}`
+      );
+      const me = await meRes.json();
+      if (me.username) {
+        igAccount = me.username;
+        ok.push(`IG token valid (@${me.username})`);
+      } else {
+        warnings.push(`IG token check failed: ${JSON.stringify(me.error || me).slice(0, 300)}`);
+      }
     }
   } catch (err) {
     warnings.push(`IG token check failed: ${err.message}`);
