@@ -27,7 +27,8 @@ export async function GET(request) {
 
   let post = null;
   try {
-    // Prefer a real Reel; fall back to a Ready Carousel (the Veo-failure output).
+    // Prefer a real Reel → Carousel → any Ready image so the daily slot never goes silent
+    // when Airtable lacks Type / Video URL fields.
     let queue = await listReadyQueue("Reel");
     let type = "Reel";
     if (queue.length === 0) {
@@ -35,24 +36,32 @@ export async function GET(request) {
       type = "Carousel";
     }
     if (queue.length === 0) {
+      queue = await listReadyQueue("Feed");
+      type = "Feed";
+    }
+    if (queue.length === 0) {
       return Response.json({
         ok: true,
         skipped: true,
-        message: "No reels or carousel fallbacks ready to post",
+        message: "No reels, carousels, or feed posts ready to post",
       });
     }
 
     post = queue[0];
+    // Infer type from row contents when Type field is absent
+    if (post.fields["Video URL"]) type = "Reel";
+    else if (post.fields["Slide URLs"]) type = "Carousel";
+    else type = "Feed";
+
     const retryCount = post.fields["Retry Count"] || 0;
     const token = process.env.IG_ACCESS_TOKEN;
     const igUserId = process.env.IG_USER_ID;
+    if (!token || !igUserId) {
+      throw new Error("IG_ACCESS_TOKEN or IG_USER_ID missing");
+    }
 
     let container;
     if (type === "Reel") {
-      if (!post.fields["Video URL"]) {
-        await markQueueFailed(post.id, "Reel missing Video URL", { retryCount });
-        return Response.json({ error: `Reel ${post.id} has no Video URL` }, { status: 400 });
-      }
       container = await createIgReelContainer({
         igUserId,
         token,
@@ -62,7 +71,7 @@ export async function GET(request) {
         shareToFeed: true,
       });
       await waitForIgContainer(container.id, token, { attempts: 40, delayMs: 4000 });
-    } else {
+    } else if (type === "Carousel") {
       // Carousel fallback: build each slide as a child, then a carousel container.
       let slides = [];
       try {
@@ -90,6 +99,18 @@ export async function GET(request) {
         caption: post.fields.Caption || "",
       });
       await waitForIgContainer(container.id, token, { attempts: 20, delayMs: 3000 });
+    } else {
+      if (!post.fields["Image URL"]) {
+        await markQueueFailed(post.id, "Feed post missing Image URL", { retryCount });
+        return Response.json({ error: `Post ${post.id} has no Image URL` }, { status: 400 });
+      }
+      container = await createIgImageContainer({
+        igUserId,
+        token,
+        imageUrl: post.fields["Image URL"],
+        caption: post.fields.Caption || "",
+      });
+      await waitForIgContainer(container.id, token, { attempts: 15, delayMs: 2000 });
     }
 
     const published = await publishIgContainer(container.id, token, igUserId);

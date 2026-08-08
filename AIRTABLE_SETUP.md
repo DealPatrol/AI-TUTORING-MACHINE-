@@ -29,8 +29,8 @@ Fields:
 | Status | Single select | `Ready`, `Posted`, `Failed` |
 | Source URL | URL | Original winner URL |
 | Posted At | Single line text | ISO timestamp |
-| **Type** | Single select | `Feed`, `Reel`, `Carousel` — **required for growth** |
-| **Video URL** | URL | Reel MP4 public URL |
+| **Type** | Single select | `Feed`, `Reel`, `Carousel` — optional (posters infer from Video/Slide/Image URLs) |
+| **Video URL** | URL | Reel MP4 public URL — required to publish Reels |
 | **Cover URL** | URL | Reel cover image |
 | **First Comment** | Long text | Auto-posted after publish (CTAs + hashtags) |
 | **Slide URLs** | Long text | JSON array of carousel image URLs |
@@ -48,7 +48,7 @@ Fields:
 
 If Queue already exists, add the fields above, and add **Failed** to the Status select.
 
-Without Type / Video URL, Reels cannot run. Other fields degrade gracefully.
+Without **Video URL**, Reels cannot publish (feed/carousel still work). **Type** and **Sequence** are optional — crons fall back to `Status=Ready` and infer content type from URLs.
 
 Also add **Processing** to Winners Status (used to claim a winner before long generate jobs).
 
@@ -58,11 +58,12 @@ Also add **Processing** to Winners Status (used to claim a winner before long ge
 2. **Generate feed** (daily) → Queue `Type=Feed`  
 3. **Generate reel** (daily) → Queue `Type=Reel` + Video URL  
 4. **Generate carousel** (Tue/Thu/Sat) → Queue `Type=Carousel` + Slide URLs  
-5. **Post** (daily 15:00 UTC) → publishes Feed/Carousel + first comment + Story  
-6. **Post reel** (daily 18:00 UTC) → publishes Reel + first comment + Story  
-7. **Engage** (19:00 & 21:00 UTC) → replies to TIP comments with bonus prompts  
-8. **Insights** (22:00 UTC) → pulls reach/saves/plays  
-9. **Health** (12:00 UTC) → warns if winners/reels fuel is low  
+5. **Post-1** (daily 12:00 UTC) → publishes next Ready image  
+6. **Post** (daily 15:00 UTC) → publishes Feed/Carousel + first comment + Story  
+7. **Post reel** (daily 18:00 UTC) → publishes Reel (or Carousel/Feed fallback) + Story  
+8. **Health** (daily 11:00 UTC) → warns if winners/queue fuel is low  
+
+Optional: Engage / Insights / generate-carousel can be re-enabled in `vercel.json` after adding those Airtable fields.
 
 ## Testing
 

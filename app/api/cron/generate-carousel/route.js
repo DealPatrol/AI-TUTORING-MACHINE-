@@ -4,7 +4,7 @@ import { put } from "@vercel/blob";
 import {
   checkCronAuth,
   airtableCreateQueue,
-  claudeRewrite,
+  rewriteCopy,
   parseClaudeJson,
   generateGeminiImage,
   getTipDayNumber,
@@ -33,7 +33,7 @@ export async function GET(request) {
     }
     const dayNumber = await getTipDayNumber();
 
-    const raw = await claudeRewrite(carouselGrowthPrompt(winner.fields.Caption || "", dayNumber));
+    const raw = await rewriteCopy(carouselGrowthPrompt(winner.fields.Caption || "", dayNumber));
     const content = parseClaudeJson(raw);
     const slides = Array.isArray(content.slides) ? content.slides.slice(0, 7) : [];
     if (slides.length < 3) throw new Error("Carousel needs at least 3 slides");

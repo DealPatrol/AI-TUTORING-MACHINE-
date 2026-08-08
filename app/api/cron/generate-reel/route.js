@@ -5,7 +5,7 @@ import { put } from "@vercel/blob";
 import {
   checkCronAuth,
   airtableCreateQueue,
-  claudeRewrite,
+  rewriteCopy,
   parseClaudeJson,
   generateGeminiImage,
   generateVeoReelWithFallback,
@@ -46,7 +46,7 @@ export async function GET(request) {
       console.warn(`[v0] No winners available — generating evergreen Reel: "${sourceCaption}"`);
     }
 
-    const raw = await claudeRewrite(reelGrowthPrompt(sourceCaption, dayNumber));
+    const raw = await rewriteCopy(reelGrowthPrompt(sourceCaption, dayNumber));
     const content = parseClaudeJson(raw);
     const stamp = Date.now();
 
