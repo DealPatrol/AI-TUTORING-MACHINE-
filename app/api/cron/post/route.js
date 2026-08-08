@@ -15,6 +15,7 @@ import {
   safeAirtableUpdate,
   markQueueFailed,
   cleanQueueCaption,
+  getIgCredentials,
 } from "@/lib/helpers";
 
 // Instagram Login (creator/business) tokens authenticate against
@@ -50,8 +51,7 @@ export async function GET(request) {
       else type = "Feed";
     }
     const retryCount = post.fields["Retry Count"] || 0;
-    const token = process.env.IG_ACCESS_TOKEN;
-    const igUserId = process.env.IG_USER_ID;
+    const { token, igUserId } = getIgCredentials();
     let container;
 
     if (type === "Carousel") {

@@ -1,6 +1,6 @@
 // HEALTH — pipeline fuel + env checks so silent broken days get caught early.
 
-import { checkCronAuth, airtableList, getTipDayNumber } from "@/lib/helpers";
+import { checkCronAuth, airtableList, getTipDayNumber, getIgCredentials } from "@/lib/helpers";
 
 export const maxDuration = 30;
 
@@ -25,6 +25,24 @@ export async function GET(request) {
   for (const [name, val] of envChecks) {
     if (val) ok.push(`${name} set`);
     else warnings.push(`${name} missing`);
+  }
+
+  // Live Instagram token check — catches expired/malformed tokens before post time.
+  let igAccount = null;
+  try {
+    const { token } = getIgCredentials();
+    const meRes = await fetch(
+      `https://graph.instagram.com/v21.0/me?fields=user_id,username&access_token=${encodeURIComponent(token)}`
+    );
+    const me = await meRes.json();
+    if (me.username) {
+      igAccount = me.username;
+      ok.push(`IG token valid (@${me.username})`);
+    } else {
+      warnings.push(`IG token check failed: ${JSON.stringify(me.error || me).slice(0, 300)}`);
+    }
+  } catch (err) {
+    warnings.push(`IG token check failed: ${err.message}`);
   }
 
   let stats = {
@@ -70,6 +88,7 @@ export async function GET(request) {
   return Response.json({
     ok: warnings.length === 0,
     tipDay: stats.tipDay,
+    igAccount,
     stats,
     warnings,
     ready: ok,

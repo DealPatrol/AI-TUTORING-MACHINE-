@@ -9,6 +9,7 @@ import {
   createIgImageContainer,
   markQueueFailed,
   cleanQueueCaption,
+  getIgCredentials,
 } from "@/lib/helpers";
 
 export const maxDuration = 60;
@@ -33,8 +34,7 @@ export async function GET(request) {
       return Response.json({ error: "Missing Image URL" }, { status: 400 });
     }
 
-    const token = process.env.IG_ACCESS_TOKEN;
-    const igUserId = process.env.IG_USER_ID;
+    const { token, igUserId } = getIgCredentials();
     if (!token || !igUserId) {
       throw new Error("IG_ACCESS_TOKEN or IG_USER_ID missing");
     }

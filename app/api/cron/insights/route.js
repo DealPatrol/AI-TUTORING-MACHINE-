@@ -5,6 +5,7 @@ import {
   airtableList,
   getIgMediaInsights,
   safeAirtableUpdate,
+  getIgCredentials,
 } from "@/lib/helpers";
 
 export const maxDuration = 60;
@@ -14,7 +15,7 @@ export async function GET(request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const token = process.env.IG_ACCESS_TOKEN;
+  const { token } = getIgCredentials();
   if (!token) {
     return Response.json({ error: "IG_ACCESS_TOKEN missing" }, { status: 400 });
   }
