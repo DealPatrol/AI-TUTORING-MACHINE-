@@ -48,10 +48,6 @@ export async function GET(request) {
     const datasetRes = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${process.env.APIFY_TOKEN}`);
     if (!datasetRes.ok) throw new Error(`Dataset fetch failed: ${datasetRes.status}`);
     const posts = await datasetRes.json();
-    const apifyUrl = `https://api.apify.com/v2/actor-tasks/${process.env.APIFY_TASK_ID}/runs/last/dataset/items?token=${process.env.APIFY_TOKEN}&status=SUCCEEDED`;
-    const res = await fetch(apifyUrl);
-    if (!res.ok) throw new Error(`Apify fetch failed: ${res.status}`);
-    const posts = await res.json();
 
     const existing = await airtableList(
       "Winners",
