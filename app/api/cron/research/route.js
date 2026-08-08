@@ -17,7 +17,7 @@ export async function GET(request) {
     // Fetch the most recent successful run of your Apify task
     const taskId = process.env.APIFY_TASK_ID;
     const token = process.env.APIFY_TOKEN;
-    const apifyUrl = `https://api.apify.com/v2/actor-tasks/${taskId}/runs?status=SUCCEEDED&limit=1&token=${token}`;
+    const apifyUrl = `https://api.apify.com/v2/actor-tasks/${taskId}/runs?status=SUCCEEDED&desc=1&limit=1&token=${token}`;
     const runsRes = await fetch(apifyUrl);
     if (!runsRes.ok) throw new Error(`Apify fetch failed: ${runsRes.status}`);
     const runsData = await runsRes.json();
