@@ -1,9 +1,8 @@
 // SKILL 04 — THE POSTER (runs daily)
-// Publishes Feed/Carousel, first-comment CTA, then a Story for profile visits.
+// Publishes Feed/Carousel, first-comment CTA, Story, stores IG Media ID.
 
 import {
   checkCronAuth,
-  airtableUpdate,
   waitForIgContainer,
   publishIgContainer,
   postIgFirstComment,
@@ -11,6 +10,8 @@ import {
   createIgCarouselContainer,
   listReadyQueue,
   publishIgStory,
+  safeAirtableUpdate,
+  markQueueFailed,
 } from "@/lib/helpers";
 
 export const maxDuration = 120;
@@ -20,17 +21,21 @@ export async function GET(request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  let post = null;
   try {
-    // Prefer carousels (high saves), else feed graphics — reels have their own cron
     let queue = await listReadyQueue("Carousel");
     if (queue.length === 0) {
       queue = await listReadyQueue("Feed");
     }
     if (queue.length === 0) {
-      return Response.json({ ok: true, message: "Queue is empty for feed/carousel" });
+      return Response.json({
+        ok: true,
+        skipped: true,
+        message: "Queue is empty for feed/carousel",
+      });
     }
 
-    const post = queue[0];
+    post = queue[0];
     const type = post.fields.Type || "Feed";
     const token = process.env.IG_ACCESS_TOKEN;
     const igUserId = process.env.IG_USER_ID;
@@ -44,6 +49,7 @@ export async function GET(request) {
         slides = [];
       }
       if (!Array.isArray(slides) || slides.length < 2) {
+        await markQueueFailed(post.id, "Carousel needs Slide URLs JSON with 2+ images");
         return Response.json(
           { error: `Carousel ${post.id} needs Slide URLs JSON with 2+ images` },
           { status: 400 }
@@ -69,6 +75,7 @@ export async function GET(request) {
       });
     } else {
       if (!post.fields["Image URL"]) {
+        await markQueueFailed(post.id, "Missing Image URL");
         return Response.json({ error: `Record ${post.id} has no Image URL, skipping.` }, { status: 400 });
       }
       container = await createIgImageContainer({
@@ -88,7 +95,6 @@ export async function GET(request) {
       token
     );
 
-    // Story = extra profile visits the same day (followers come from profile, not just the Reel)
     const storyImage =
       post.fields["Story Image URL"] ||
       (type === "Carousel" ? null : post.fields["Image URL"]);
@@ -96,9 +102,10 @@ export async function GET(request) {
       ? await publishIgStory({ igUserId, token, imageUrl: storyImage })
       : null;
 
-    await airtableUpdate("Queue", post.id, {
+    await safeAirtableUpdate("Queue", post.id, {
       Status: "Posted",
       "Posted At": new Date().toISOString(),
+      "IG Media ID": published.id,
     });
 
     return Response.json({
@@ -111,6 +118,7 @@ export async function GET(request) {
     });
   } catch (err) {
     console.error("Post cron error:", err);
+    if (post?.id) await markQueueFailed(post.id, err.message);
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

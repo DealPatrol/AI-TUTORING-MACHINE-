@@ -1,14 +1,15 @@
-// DAILY REEL POSTER — one Reel/day to Reels tab + feed, then Story + first comment.
+// DAILY REEL POSTER — one Reel/day + Story + first comment; stores IG Media ID.
 
 import {
   checkCronAuth,
-  airtableUpdate,
   waitForIgContainer,
   publishIgContainer,
   postIgFirstComment,
   createIgReelContainer,
   listReadyQueue,
   publishIgStory,
+  safeAirtableUpdate,
+  markQueueFailed,
 } from "@/lib/helpers";
 
 export const maxDuration = 180;
@@ -18,18 +19,21 @@ export async function GET(request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  let post = null;
   try {
     const queue = await listReadyQueue("Reel");
     if (queue.length === 0) {
-      return Response.json({ ok: true, message: "No reels ready to post" });
+      return Response.json({
+        ok: true,
+        skipped: true,
+        message: "No reels ready to post",
+      });
     }
 
-    const post = queue[0];
+    post = queue[0];
     if (!post.fields["Video URL"]) {
-      return Response.json(
-        { error: `Reel ${post.id} has no Video URL` },
-        { status: 400 }
-      );
+      await markQueueFailed(post.id, "Reel missing Video URL");
+      return Response.json({ error: `Reel ${post.id} has no Video URL` }, { status: 400 });
     }
 
     const token = process.env.IG_ACCESS_TOKEN;
@@ -44,7 +48,6 @@ export async function GET(request) {
       shareToFeed: true,
     });
 
-    // Reels take longer to process than images
     await waitForIgContainer(container.id, token, { attempts: 40, delayMs: 4000 });
     const published = await publishIgContainer(container.id, token, igUserId);
 
@@ -54,7 +57,6 @@ export async function GET(request) {
       token
     );
 
-    // Same-day Story from vertical creative → more profile visits → more follows
     const storyImage =
       post.fields["Story Image URL"] ||
       post.fields["Cover URL"] ||
@@ -63,9 +65,10 @@ export async function GET(request) {
       ? await publishIgStory({ igUserId, token, imageUrl: storyImage })
       : null;
 
-    await airtableUpdate("Queue", post.id, {
+    await safeAirtableUpdate("Queue", post.id, {
       Status: "Posted",
       "Posted At": new Date().toISOString(),
+      "IG Media ID": published.id,
     });
 
     return Response.json({
@@ -78,6 +81,7 @@ export async function GET(request) {
     });
   } catch (err) {
     console.error("Post reel cron error:", err);
+    if (post?.id) await markQueueFailed(post.id, err.message);
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

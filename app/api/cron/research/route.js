@@ -37,7 +37,11 @@ export async function GET(request) {
     if (!res.ok) throw new Error(`Apify fetch failed: ${res.status}`);
     const posts = await res.json();
 
-    const existing = await airtableList("Winners", "fields%5B%5D=Post+URL&maxRecords=500");
+    const existing = await airtableList(
+      "Winners",
+      "fields%5B%5D=" + encodeURIComponent("Post URL"),
+      { paginate: true, maxRecords: 1000 }
+    );
     const seenUrls = new Set(existing.map((r) => r.fields["Post URL"]));
 
     const winners = posts

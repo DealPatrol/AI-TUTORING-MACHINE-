@@ -66,12 +66,13 @@ curl -H "Authorization: Bearer YOUR_CRON_SECRET" https://your-app.vercel.app/api
 | Feature | Why it helps | Schedule |
 |--------|----------------|----------|
 | **Daily Reels** | Reels get the widest non-follower reach | Generate 8:00 UTC · Post **18:00 UTC daily** |
-| **Follow end-cards + CTAs** | Converts viewers → followers | Every Reel/feed/carousel |
+| **Veo fallback** | Never skip a day if video gen fails | Auto → carousel same day |
+| **Day N tip streak** | Habit + follow reason (“Day 47”) | Every piece of content |
+| **TIP comment replies** | Makes engagement CTA real → more comments | 19:00 & 21:00 UTC |
 | **Stories after each post** | Extra profile visits same day | Auto after feed + reel publish |
-| **First comment hashtags** | Cleaner caption, still discoverable | Auto after every publish |
+| **Insights** | See which formats grow reach | Daily 22:00 UTC |
 | **Carousels** | Highest save rate → more reach | Tue / Thu / Sat |
-| **Instagram search keywords** | Shows up for “ChatGPT tips” etc. | Built into captions |
-| **Smarter research** | Prefers high comment-rate + video ideas | Mondays |
+| **Pipeline health** | Catch empty queues before post time | Daily 12:00 UTC |
 
 Tune voice/prompts in `lib/growth.js`.
 
@@ -89,6 +90,9 @@ Optional env: `VEO_MODEL` (default `veo-3.1-fast-generate-preview`).
 | `/api/cron/generate-carousel` | Tue/Thu/Sat 09:00 |
 | `/api/cron/post` | Daily 15:00 |
 | `/api/cron/post-reel` | Daily 18:00 |
+| `/api/cron/engage` | Daily 19:00 & 21:00 |
+| `/api/cron/insights` | Daily 22:00 |
+| `/api/cron/health` | Daily 12:00 |
 
 ---
 
