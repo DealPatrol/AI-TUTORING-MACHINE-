@@ -15,25 +15,6 @@ export default function DashboardClient() {
   const [triggering, setTriggering] = useState({});
   const [message, setMessage] = useState("");
 
-  // Fetch dashboard data
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch("/api/dashboard/data");
-        const result = await res.json();
-        if (!result.error) {
-          setData(result);
-          setMessage("");
-        } else {
-          setMessage("Could not load Airtable data. Check credentials in Vercel project settings.");
-        }
-      } catch (err) {
-        console.error("Fetch error:", err);
-        setMessage("Could not reach the data API. Check your connection.");
-  const [message, setMessage] = useState(
-    "Airtable not configured yet. Add API credentials to Vercel to view live data."
-  );
-
   const refresh = async () => {
     try {
       const res = await fetch("/api/dashboard/data");
@@ -41,9 +22,12 @@ export default function DashboardClient() {
       if (!result.error) {
         setData(result);
         setMessage("");
+      } else {
+        setMessage("Could not load Airtable data. Check credentials in Vercel project settings.");
       }
     } catch (err) {
       console.error("Fetch error:", err);
+      setMessage("Could not reach the data API. Check your connection.");
     }
   };
 
@@ -295,35 +279,6 @@ export default function DashboardClient() {
           </div>
           <div className="section-footer">
             Auto-posts daily: 12 PM, 2 PM, 4 PM UTC (3 different hooks, visuals, angles)
-                <p>Queue is empty. Generate a feed post, reel, or carousel.</p>
-              </div>
-            ) : (
-              data.queue.map((post) => (
-                <div key={post.id} className="item">
-                  <div className="item-title">{post.hook}</div>
-                  <div className="item-meta">
-                    {typeBadge(post.type)}
-                    {post.dayNumber != null && <span>Day {post.dayNumber}</span>}
-                    {post.fallbackUsed && (
-                      <span className="status-badge" style={{ background: "#ffedd5", color: "#9a3412" }}>
-                        Veo fallback
-                      </span>
-                    )}
-                    <span className="status-badge status-ready">{post.status}</span>
-                  </div>
-                  {post.imageUrl && (
-                    <img src={post.imageUrl} alt={post.hook} className="item-image" />
-                  )}
-                  {post.videoUrl && (
-                    <div className="item-caption">Video ready</div>
-                  )}
-                  <div className="item-caption">{post.caption?.slice(0, 120)}...</div>
-                </div>
-              ))
-            )}
-          </div>
-          <div className="section-footer">
-            Feed/carousel 15:00 UTC · Reels 18:00 UTC · TIP replies 19:00 & 21:00
           </div>
         </div>
 
@@ -424,6 +379,8 @@ export default function DashboardClient() {
         </p>
         <p>
           Use the Image and Reel buttons above to test, or Generate to create 3 new variations with Apify videos daily.
+        </p>
+      </div>
       {data?.failed?.length > 0 && (
         <div className="section" style={{ marginBottom: "2rem" }}>
           <div className="section-header">

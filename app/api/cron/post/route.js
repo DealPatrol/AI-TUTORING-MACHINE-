@@ -16,8 +16,6 @@ import {
   markQueueFailed,
 } from "@/lib/helpers";
 
-export const maxDuration = 60;
-
 // Instagram Login (creator/business) tokens authenticate against
 // graph.instagram.com, NOT graph.facebook.com. The content-publishing
 // endpoints (/media and /media_publish) are the same on this host.
@@ -117,18 +115,7 @@ export async function GET(request) {
       throw new Error("Media did not finish processing in time (still IN_PROGRESS after ~30s)");
     }
 
-    // 3. Publish it
-    const publishRes = await fetch(`${GRAPH}/${igUserId}/media_publish`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        creation_id: container.id,
-        access_token: token,
-      }),
-    });
-    const published = await publishRes.json();
-    if (!published.id) throw new Error(`Publish failed: ${JSON.stringify(published)}`);
-    await waitForIgContainer(container.id, token);
+    // 3. Publish it after Instagram finishes processing the container.
     const published = await publishIgContainer(container.id, token, igUserId);
 
     const comment = await postIgFirstComment(

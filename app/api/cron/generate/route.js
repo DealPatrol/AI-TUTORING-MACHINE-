@@ -3,8 +3,6 @@
 // using Gemini (signal variance) + 1 video using Veo AI. Queues all 3 posts 
 // with video for reel posting at 1pm, 3pm, 5pm UTC.
 
-import { put } from "@vercel/blob";
-import { checkCronAuth, airtableList, airtableCreate, airtableUpdate } from "@/lib/helpers";
 // SKILL 02 + 03 — THE COPYWRITER + THE DESIGNER (runs daily)
 // Growth-optimized feed graphic + Story creative + Day N streak.
 
