@@ -1,6 +1,6 @@
 // HEALTH — pipeline fuel + env checks so silent broken days get caught early.
 
-import { checkCronAuth, airtableList, getTipDayNumber, getIgCredentials } from "@/lib/helpers";
+import { checkCronAuth, airtableList, getTipDayNumber, getIgCredentials, igGraphBase } from "@/lib/helpers";
 
 export const maxDuration = 30;
 
@@ -34,8 +34,10 @@ export async function GET(request) {
     const { token, igUserId } = getIgCredentials();
     // Shape only — never the token itself. IG tokens start with IGQ/IGAA/EAA and are 100+ chars.
     igTokenMeta = { length: token.length, prefix: token.slice(0, 4), igUserIdLength: igUserId.length };
+    // Query the IG account itself — works on both graph.facebook.com (EAA
+    // tokens) and graph.instagram.com (IGQ/IGAA tokens).
     const meRes = await fetch(
-      `https://graph.instagram.com/v21.0/me?fields=user_id,username&access_token=${encodeURIComponent(token)}`
+      `${igGraphBase()}/${igUserId}?fields=username&access_token=${encodeURIComponent(token)}`
     );
     const me = await meRes.json();
     if (me.username) {

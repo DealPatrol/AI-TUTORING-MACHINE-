@@ -16,12 +16,9 @@ import {
   markQueueFailed,
   cleanQueueCaption,
   getIgCredentials,
+  igGraphBase,
 } from "@/lib/helpers";
 
-// Instagram Login (creator/business) tokens authenticate against
-// graph.instagram.com, NOT graph.facebook.com. The content-publishing
-// endpoints (/media and /media_publish) are the same on this host.
-const GRAPH = "https://graph.instagram.com/v21.0";
 export const maxDuration = 120;
 
 export async function GET(request) {
@@ -106,7 +103,7 @@ export async function GET(request) {
     for (let attempt = 0; attempt < 10; attempt++) {
       await new Promise((r) => setTimeout(r, 3000)); // wait 3s between checks
       const statusRes = await fetch(
-        `${GRAPH}/${container.id}?fields=status_code,status&access_token=${token}`
+        `${igGraphBase()}/${container.id}?fields=status_code,status&access_token=${token}`
       );
       const status = await statusRes.json();
       if (status.status_code === "FINISHED") {
