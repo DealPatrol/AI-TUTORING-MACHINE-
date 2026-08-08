@@ -43,6 +43,7 @@ export async function GET(request) {
 
     post = queue[0];
     const type = post.fields.Type || "Feed";
+    const retryCount = post.fields["Retry Count"] || 0;
     const token = process.env.IG_ACCESS_TOKEN;
     const igUserId = process.env.IG_USER_ID;
     let container;
@@ -55,7 +56,7 @@ export async function GET(request) {
         slides = [];
       }
       if (!Array.isArray(slides) || slides.length < 2) {
-        await markQueueFailed(post.id, "Carousel needs Slide URLs JSON with 2+ images");
+        await markQueueFailed(post.id, "Carousel needs Slide URLs JSON with 2+ images", { retryCount });
         return Response.json(
           { error: `Carousel ${post.id} needs Slide URLs JSON with 2+ images` },
           { status: 400 }
@@ -81,7 +82,7 @@ export async function GET(request) {
       });
     } else {
       if (!post.fields["Image URL"]) {
-        await markQueueFailed(post.id, "Missing Image URL");
+        await markQueueFailed(post.id, "Missing Image URL", { retryCount });
         return Response.json({ error: `Record ${post.id} has no Image URL, skipping.` }, { status: 400 });
       }
       container = await createIgImageContainer({
@@ -147,7 +148,7 @@ export async function GET(request) {
     });
   } catch (err) {
     console.error("Post cron error:", err);
-    if (post?.id) await markQueueFailed(post.id, err.message);
+    if (post?.id) await markQueueFailed(post.id, err.message, { retryCount: post.fields["Retry Count"] || 0 });
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

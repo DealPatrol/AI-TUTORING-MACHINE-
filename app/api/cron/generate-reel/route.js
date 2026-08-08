@@ -13,9 +13,13 @@ import {
   claimNextWinner,
   markWinnerUsed,
   releaseWinner,
+  tryRefillWinners,
 } from "@/lib/helpers";
-import { reelGrowthPrompt, buildFirstComment, storyOverlayPrompt } from "@/lib/growth";
+import { reelGrowthPrompt, buildFirstComment, storyOverlayPrompt, pickEvergreenTopic } from "@/lib/growth";
 
+// 300s is the safe serverless ceiling. Veo generation is internally capped by
+// an overall time budget (see generateVeoReelWithFallback) so all model
+// attempts + Claude + images + uploads reliably finish within this window.
 export const maxDuration = 300;
 
 export async function GET(request) {
@@ -25,17 +29,24 @@ export async function GET(request) {
 
   let winner = null;
   try {
-    winner = await claimNextWinner();
-    if (!winner) {
-      return Response.json({
-        ok: true,
-        skipped: true,
-        message: "No new winners left for reels",
-      });
-    }
     const dayNumber = await getTipDayNumber();
 
-    const raw = await claudeRewrite(reelGrowthPrompt(winner.fields.Caption || "", dayNumber));
+    // STARVATION GUARD: never skip a day. Try a winner; if the table is empty,
+    // attempt a best-effort refill, then fall back to an evergreen topic so a
+    // Reel is always produced.
+    winner = await claimNextWinner();
+    if (!winner) {
+      console.warn("[v0] Winners table empty — attempting best-effort refill via research");
+      await tryRefillWinners();
+      winner = await claimNextWinner();
+    }
+    const isEvergreen = !winner;
+    const sourceCaption = winner ? winner.fields.Caption || "" : pickEvergreenTopic(dayNumber);
+    if (isEvergreen) {
+      console.warn(`[v0] No winners available — generating evergreen Reel: "${sourceCaption}"`);
+    }
+
+    const raw = await claudeRewrite(reelGrowthPrompt(sourceCaption, dayNumber));
     const content = parseClaudeJson(raw);
     const stamp = Date.now();
 
@@ -118,13 +129,13 @@ Headline (render exactly): "${String(beats[i]).slice(0, 80)}"`
         "First Comment": firstComment,
         "Story Text": content.storyText || content.coverText || content.hook,
         "Story Image URL": storyBlob.url,
-        "Source URL": winner.fields["Post URL"] || "",
+        "Source URL": winner?.fields?.["Post URL"] || "",
         "Day Number": dayNumber,
         "Bonus Prompt": content.bonusPrompt || "",
         "Fallback Used": true,
         "Last Error": `Veo failed: ${veoErr.message}`.slice(0, 1000),
       });
-      if (!winner._claimedAsUsed) await markWinnerUsed(winner.id);
+      if (winner && !winner._claimedAsUsed) await markWinnerUsed(winner.id);
 
       return Response.json({
         ok: true,
@@ -147,12 +158,12 @@ Headline (render exactly): "${String(beats[i]).slice(0, 80)}"`
       "First Comment": firstComment,
       "Story Text": content.storyText || content.coverText || content.hook,
       "Story Image URL": storyBlob.url,
-      "Source URL": winner.fields["Post URL"] || "",
+      "Source URL": winner?.fields?.["Post URL"] || "",
       "Day Number": dayNumber,
       "Bonus Prompt": content.bonusPrompt || "",
       "Fallback Used": false,
     });
-    if (!winner._claimedAsUsed) await markWinnerUsed(winner.id);
+    if (winner && !winner._claimedAsUsed) await markWinnerUsed(winner.id);
 
     return Response.json({
       ok: true,
