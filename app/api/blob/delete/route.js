@@ -1,8 +1,13 @@
 import { del } from "@vercel/blob";
 import { NextResponse } from "next/server";
+import { checkCronAuth } from "@/lib/helpers";
 
 export async function DELETE(request) {
   try {
+    if (!checkCronAuth(request)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { url } = await request.json();
 
     if (!url) {
