@@ -1,5 +1,8 @@
 import { triggerCron } from "@/lib/trigger";
+import { GET as cronHandler } from "@/app/api/cron/post/route";
+
+export const maxDuration = 300;
 
 export async function POST() {
-  return triggerCron("/api/cron/post", "post");
+  return triggerCron(cronHandler, "post");
 }
