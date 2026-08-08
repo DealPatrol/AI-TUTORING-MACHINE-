@@ -18,6 +18,7 @@ export async function GET(request) {
   }
 
   let post = null;
+  let published = null;
   try {
     const queue = await listReadyBySequence(1);
     if (queue.length === 0) {
@@ -44,7 +45,7 @@ export async function GET(request) {
       caption: post.fields.Caption || "",
     });
     await waitForIgContainer(container.id, token, { attempts: 15, delayMs: 2000 });
-    const published = await publishIgContainer(container.id, token, igUserId);
+    published = await publishIgContainer(container.id, token, igUserId);
 
     await safeAirtableUpdate("Queue", post.id, {
       Status: "Posted",
@@ -60,7 +61,7 @@ export async function GET(request) {
     });
   } catch (err) {
     console.error("Post-1 cron error:", err);
-    if (post?.id) {
+    if (post?.id && !published) {
       await markQueueFailed(post.id, err.message, {
         retryCount: post.fields["Retry Count"] || 0,
       });
