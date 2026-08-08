@@ -127,9 +127,12 @@ Save both as environment variables in Vercel.
 3. The dashboard will be live at your Vercel domain (e.g., `your-project.vercel.app`)
 
 4. You can manually trigger crons from the dashboard or they'll run on schedule:
-   - **Research**: Mondays at 9 AM UTC
-   - **Generate**: Daily at 12 PM UTC
-   - **Post**: Daily at 3 PM UTC
+   - **Research**: Mondays 06:00 UTC
+   - **Generate feed**: Daily 07:00 UTC
+   - **Generate reel**: Daily 08:00 UTC
+   - **Generate carousel**: Tue/Thu/Sat 09:00 UTC
+   - **Post feed/carousel**: Daily 15:00 UTC
+   - **Post reel**: Daily 18:00 UTC
 
 ---
 
@@ -152,26 +155,23 @@ Use the dashboard buttons to test each cron:
 
 ## Customization
 
-### Brand Voice
+### Brand Voice & Growth Copy
 
-Edit `/app/api/cron/generate/route.js` line 12-17 to change the brand voice prompt.
+Edit `lib/growth.js` for brand voice, hashtags, feed/reel/carousel prompts, and first-comment CTAs.
 
 ### Image Style
 
-Edit the Gemini prompt in `/app/api/cron/generate/route.js` line 48-53 to customize graphics.
+Edit the Gemini prompts in `app/api/cron/generate/route.js`, `generate-reel/route.js`, and `generate-carousel/route.js`.
 
 ### Winner Threshold
 
 Edit `/app/api/cron/research/route.js`:
-- Line 9: `MIN_LIKES` — minimum likes to qualify
-- Line 10: `MAX_WINNERS` — max winners per week
+- `MIN_LIKES` — minimum likes to qualify
+- `MAX_WINNERS` — max winners per week (raised to fuel feed + reels + carousels)
 
 ### Post Timing
 
-Edit `/vercel.json` cron schedules:
-- `cron: "0 9 * * 1"` — Research (Monday 9 AM UTC)
-- `cron: "0 12 * * *"` — Generate (Daily 12 PM UTC)
-- `cron: "0 15 * * *"` — Post (Daily 3 PM UTC)
+Edit `/vercel.json` — includes daily Reel generate/post plus carousel days.
 
 ---
 

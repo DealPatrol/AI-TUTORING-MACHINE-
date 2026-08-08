@@ -1,104 +1,83 @@
 # Airtable Setup for AI Tutor Machine
 
-Your Airtable base is connected, but it needs 2 tables to be created. Follow these steps:
+Your Airtable base needs **Winners** and **Queue** tables. Growth features add a few Queue fields for Reels and carousels.
 
-## Option A: Manual Setup (Recommended for First Time)
+## 1. Create "Winners" Table
 
-### 1. Create "Winners" Table
+Fields:
 
-1. Go to https://airtable.com/appU37HKkNZq13BYd (your base)
-2. Click "Create table" (or "+" to add a new table)
-3. Name it: `Winners`
-4. Add these fields:
-   - **Post URL** (text) - URL of the Instagram post
-   - **Caption** (long text) - Original caption from the post
-   - **Likes** (number) - Like count
-   - **Status** (single select) - Options: "New", "Used"
-   - **Created** (date) - When the post was found
+| Field | Type | Notes |
+|-------|------|--------|
+| Post URL | Single line text | Instagram post URL |
+| Account | Single line text | Source username |
+| Caption | Long text | Original caption |
+| Likes | Number | |
+| Comments | Number | |
+| Status | Single select | `New`, `Processing`, `Used` |
+| Format | Single line text | Optional — Image / Video / Sidecar |
+| Growth Score | Number | Optional — set by research cron |
 
-Example record:
-```
-Post URL: https://www.instagram.com/p/ABC123/
-Caption: "Check out this amazing tip for..."
-Likes: 523
-Status: New
-Created: 2024-01-15
-```
+## 2. Create "Queue" Table
 
-### 2. Create "Queue" Table
+Fields:
 
-1. Click "Create table" again
-2. Name it: `Queue`
-3. Add these fields:
-   - **Copy** (long text) - Your rewritten caption
-   - **Image URL** (text) - URL to the generated image in Vercel Blob
-   - **Original URL** (text) - Link back to the original post
-   - **Status** (single select) - Options: "Ready", "Posted"
-   - **Created** (date) - When created
+| Field | Type | Notes |
+|-------|------|--------|
+| Hook | Single line text | Headline |
+| Caption | Long text | Full caption |
+| Image URL | URL | Cover / feed image |
+| Status | Single select | `Ready`, `Posted`, `Failed` |
+| Source URL | URL | Original winner URL |
+| Posted At | Single line text | ISO timestamp |
+| **Type** | Single select | `Feed`, `Reel`, `Carousel` — **required for growth** |
+| **Video URL** | URL | Reel MP4 public URL |
+| **Cover URL** | URL | Reel cover image |
+| **First Comment** | Long text | Auto-posted after publish (CTAs + hashtags) |
+| **Slide URLs** | Long text | JSON array of carousel image URLs |
+| **Story Text** | Single line text | Overlay copy for Stories |
+| **Story Image URL** | URL | 9:16 Story graphic (posted after feed/reel) |
+| **Day Number** | Number | Tip streak (“Day 12”) |
+| **Bonus Prompt** | Long text | Sent when someone comments TIP |
+| **IG Media ID** | Single line text | Set on publish — needed for engage + insights |
+| **Reach / Saves / Shares / Plays** | Number | Filled by insights cron |
+| **Replied Comment IDs** | Long text | JSON array — avoids double TIP replies |
+| **Fallback Used** | Checkbox | True when Veo failed and carousel shipped instead |
+| **Last Error** | Long text | Failure reason |
 
-Example record:
-```
-Copy: "Here's the key to getting more engagement..."
-Image URL: https://blob.vercel-storage.com/...
-Original URL: https://www.instagram.com/p/ABC123/
-Status: Ready
-Created: 2024-01-15
-```
+### Quick add (growth fields)
 
-## How It Works
+If Queue already exists, add the fields above, and add **Failed** to the Status select.
 
-Once both tables exist:
+Without Type / Video URL, Reels cannot run. Other fields degrade gracefully.
 
-1. **Research Cron** (Mondays 9 AM UTC)
-   - Finds high-engagement posts via Apify
-   - Saves them to the "Winners" table with Status="New"
+Also add **Processing** to Winners Status (used to claim a winner before long generate jobs).
 
-2. **Generate Cron** (Daily 12 PM UTC)
-   - Picks a "New" winner
-   - Claude rewrites the caption
-   - Gemini generates a graphic
-   - Saves to "Queue" table with Status="Ready"
-   - Updates the winner to Status="Used"
+## How content flows
 
-3. **Post Cron** (Daily 3 PM UTC)
-   - Finds the first "Ready" post
-   - Posts to Instagram via Meta Graph API
-   - Updates Queue to Status="Posted"
-
-4. **Dashboard**
-   - Shows "Winners" (New posts found)
-   - Shows "Queue" (Ready to post)
-   - Shows "Posted" (Recently published)
+1. **Research** (Mondays) → Winners (`Status=New`), scored for comments + video/carousel bias  
+2. **Generate feed** (daily) → Queue `Type=Feed`  
+3. **Generate reel** (daily) → Queue `Type=Reel` + Video URL  
+4. **Generate carousel** (Tue/Thu/Sat) → Queue `Type=Carousel` + Slide URLs  
+5. **Post** (daily 15:00 UTC) → publishes Feed/Carousel + first comment + Story  
+6. **Post reel** (daily 18:00 UTC) → publishes Reel + first comment + Story  
+7. **Engage** (19:00 & 21:00 UTC) → replies to TIP comments with bonus prompts  
+8. **Insights** (22:00 UTC) → pulls reach/saves/plays  
+9. **Health** (12:00 UTC) → warns if winners/reels fuel is low  
 
 ## Testing
 
-Once tables are created:
-
-1. Go to https://ai-tutor-machine.vercel.app/dashboard (or your URL)
-2. You'll see the queue viewer populate with data
-3. Click "Trigger Research" to manually find posts
-4. Check Airtable to see them appear in "Winners"
-5. Click "Trigger Generate" to create a post
-6. Watch it move to "Queue"
+1. Open your Vercel dashboard URL  
+2. Trigger Research → check Winners  
+3. Trigger Generate Reel → check Queue for `Type=Reel` and a Video URL  
+4. Trigger Post Reel → check Instagram Reels tab  
 
 ## Troubleshooting
 
-**"Airtable list failed: 404"**
-- Tables don't exist yet. Create them above.
-- Make sure the table names are EXACTLY "Winners" and "Queue" (case-sensitive)
+**"Airtable Queue is missing growth fields"**  
+→ Add Type / Video URL / Cover URL / First Comment / Slide URLs as above.
 
-**"Airtable API failed: 401"**
-- Your API token is wrong or expired
-- Go to account settings → tokens and regenerate
+**"Airtable list failed: 404"**  
+→ Table names must be exactly `Winners` and `Queue`.
 
-**No data showing in dashboard**
-- Add some test records to the Winners table manually first
-- The dashboard will display them
-
-## Next: Instagram Credentials
-
-Once Airtable is set up, you need 2 Instagram credentials:
-- IG_ACCESS_TOKEN (long-lived token)
-- IG_USER_ID (your business account ID)
-
-See `SETUP.md` for Instagram setup.
+**Veo / reel generate fails**  
+→ Gemini key needs paid Veo access. See README growth section.

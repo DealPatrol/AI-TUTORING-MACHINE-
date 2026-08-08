@@ -1,23 +1,63 @@
 import { NextResponse } from "next/server";
-import { airtableList } from "@/lib/helpers";
+import { airtableList, getTipDayNumber, appBaseUrl } from "@/lib/helpers";
 
-export async function GET(request) {
+export const dynamic = "force-dynamic";
+
+export async function GET() {
   try {
-    // Fetch all three tables
-    const [queue, winners, posted] = await Promise.all([
+    const [queue, winners, posted, failed] = await Promise.all([
       airtableList("Queue", "filterByFormula=" + encodeURIComponent(`{Status}="Ready"`)),
       airtableList("Winners", "filterByFormula=" + encodeURIComponent(`{Status}="New"`)),
-      airtableList("Queue", "filterByFormula=" + encodeURIComponent(`{Status}="Posted"`) + "&maxRecords=10"),
+      airtableList(
+        "Queue",
+        "filterByFormula=" + encodeURIComponent(`{Status}="Posted"`) + "&maxRecords=12"
+      ),
+      airtableList(
+        "Queue",
+        "filterByFormula=" + encodeURIComponent(`{Status}="Failed"`) + "&maxRecords=10"
+      ).catch(() => []),
     ]);
 
+    const tipDay = await getTipDayNumber();
+    const warnings = [];
+    const readyReels = queue.filter((r) => r.fields.Type === "Reel").length;
+    const readyFeed = queue.filter((r) => !r.fields.Type || r.fields.Type === "Feed").length;
+    const readyCarousels = queue.filter((r) => r.fields.Type === "Carousel").length;
+    if (winners.length < 3) warnings.push(`Low winners (${winners.length}) — run research`);
+    if (readyReels === 0) warnings.push("No Ready Reel for today's 18:00 UTC post");
+    if (readyFeed + readyCarousels === 0) warnings.push("No Ready feed/carousel for 15:00 UTC");
+    if (failed.length) warnings.push(`${failed.length} failed queue item(s)`);
+
+    const topPosted = [...posted]
+      .map((r) => ({
+        id: r.id,
+        hook: r.fields.Hook,
+        type: r.fields.Type || "Feed",
+        postedAt: r.fields["Posted At"],
+        reach: r.fields.Reach || 0,
+        saves: r.fields.Saves || 0,
+        plays: r.fields.Plays || 0,
+        igMediaId: r.fields["IG Media ID"],
+        dayNumber: r.fields["Day Number"],
+      }))
+      .sort((a, b) => (b.reach || 0) - (a.reach || 0));
+
     return NextResponse.json({
+      tipDay,
+      warnings,
       queue: queue.map((r) => ({
         id: r.id,
         sequence: r.fields.Sequence,
         hook: r.fields.Hook,
         caption: r.fields.Caption,
         imageUrl: r.fields["Image URL"],
+        videoUrl: r.fields["Video URL"],
+        storyImageUrl: r.fields["Story Image URL"],
+        firstComment: r.fields["First Comment"],
+        type: r.fields.Type || "Feed",
         status: r.fields.Status,
+        dayNumber: r.fields["Day Number"],
+        fallbackUsed: r.fields["Fallback Used"],
         sourceUrl: r.fields["Source URL"],
       })),
       winners: winners.map((r) => ({
@@ -28,18 +68,29 @@ export async function GET(request) {
         likes: r.fields.Likes,
         comments: r.fields.Comments,
         status: r.fields.Status,
+        format: r.fields.Format,
+        growthScore: r.fields["Growth Score"],
       })),
-      posted: posted.map((r) => ({
+      posted: topPosted,
+      failed: failed.map((r) => ({
         id: r.id,
         hook: r.fields.Hook,
-        postedAt: r.fields["Posted At"],
+        type: r.fields.Type || "Feed",
+        error: r.fields["Last Error"],
       })),
+      stats: {
+        readyFeed,
+        readyReels,
+        readyCarousels,
+        winnersWaiting: winners.length,
+        failed: failed.length,
+        tipDay,
+      },
+      scheduleHint: "Reel posts daily 18:00 UTC · engage 19:00 & 21:00 · insights 22:00",
+      appUrl: appBaseUrl(),
     });
   } catch (error) {
     console.error("Dashboard data error:", error);
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

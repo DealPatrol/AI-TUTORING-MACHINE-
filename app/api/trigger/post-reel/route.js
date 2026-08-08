@@ -1,0 +1,5 @@
+import { triggerCron } from "@/lib/trigger";
+
+export async function POST() {
+  return triggerCron("/api/cron/post-reel", "post-reel");
+}

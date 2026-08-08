@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { triggerCron } from "@/lib/trigger";
 
 export async function POST(request) {
   try {
@@ -25,4 +25,6 @@ export async function POST(request) {
       { status: 500 }
     );
   }
+export async function POST() {
+  return triggerCron("/api/cron/post", "post");
 }
