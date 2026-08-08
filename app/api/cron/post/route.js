@@ -14,6 +14,7 @@ import {
   publishIgStory,
   safeAirtableUpdate,
   markQueueFailed,
+  cleanQueueCaption,
 } from "@/lib/helpers";
 
 // Instagram Login (creator/business) tokens authenticate against
@@ -83,7 +84,7 @@ export async function GET(request) {
         igUserId,
         token,
         children: childIds,
-        caption: post.fields.Caption || "",
+        caption: cleanQueueCaption(post.fields.Caption),
       });
     } else {
       if (!post.fields["Image URL"]) {
@@ -94,7 +95,7 @@ export async function GET(request) {
         igUserId,
         token,
         imageUrl: post.fields["Image URL"],
-        caption: post.fields.Caption || "",
+        caption: cleanQueueCaption(post.fields.Caption),
       });
     }
 

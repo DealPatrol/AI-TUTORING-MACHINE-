@@ -8,6 +8,7 @@ import {
   publishIgContainer,
   createIgImageContainer,
   markQueueFailed,
+  cleanQueueCaption,
 } from "@/lib/helpers";
 
 export const maxDuration = 60;
@@ -42,7 +43,7 @@ export async function GET(request) {
       igUserId,
       token,
       imageUrl: post.fields["Image URL"],
-      caption: post.fields.Caption || "",
+      caption: cleanQueueCaption(post.fields.Caption),
     });
     await waitForIgContainer(container.id, token, { attempts: 15, delayMs: 2000 });
     published = await publishIgContainer(container.id, token, igUserId);
