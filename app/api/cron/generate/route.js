@@ -88,6 +88,7 @@ Tiny label: "Day ${dayNumber}"`
           method: "POST",
           headers: {
             "x-goog-api-key": getGeminiApiKey(),
+            "x-goog-api-key": process.env.GEMINI_API_KEY,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -107,6 +108,7 @@ Tiny label: "Day ${dayNumber}"`
           await new Promise((r) => setTimeout(r, 5000));
           const poll = await fetch(`https://generativelanguage.googleapis.com/v1beta/${op}`, {
             headers: { "x-goog-api-key": getGeminiApiKey() },
+            headers: { "x-goog-api-key": process.env.GEMINI_API_KEY },
           });
           if (!poll.ok) continue;
           const data = await poll.json();
@@ -116,6 +118,7 @@ Tiny label: "Day ${dayNumber}"`
           if (!uri) break;
           const dl = await fetch(uri, {
             headers: { "x-goog-api-key": getGeminiApiKey() },
+            headers: { "x-goog-api-key": process.env.GEMINI_API_KEY },
             redirect: "follow",
           });
           if (!dl.ok) break;

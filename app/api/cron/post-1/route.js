@@ -35,6 +35,8 @@ export async function GET(request) {
     }
 
     const { token, igUserId } = getIgCredentials();
+    const token = process.env.IG_ACCESS_TOKEN;
+    const igUserId = process.env.IG_USER_ID;
     if (!token || !igUserId) {
       throw new Error("IG_ACCESS_TOKEN or IG_USER_ID missing");
     }
@@ -44,6 +46,7 @@ export async function GET(request) {
       token,
       imageUrl: post.fields["Image URL"],
       caption: cleanQueueCaption(post.fields.Caption),
+      caption: post.fields.Caption || "",
     });
     await waitForIgContainer(container.id, token, { attempts: 15, delayMs: 2000 });
     published = await publishIgContainer(container.id, token, igUserId);

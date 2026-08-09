@@ -61,6 +61,14 @@ export async function GET(request) {
 
     const retryCount = post.fields["Retry Count"] || 0;
     const { token, igUserId } = getIgCredentials();
+    // Infer type from row contents when Type field is absent
+    if (post.fields["Video URL"]) type = "Reel";
+    else if (post.fields["Slide URLs"]) type = "Carousel";
+    else type = "Feed";
+
+    const retryCount = post.fields["Retry Count"] || 0;
+    const token = process.env.IG_ACCESS_TOKEN;
+    const igUserId = process.env.IG_USER_ID;
     if (!token || !igUserId) {
       throw new Error("IG_ACCESS_TOKEN or IG_USER_ID missing");
     }
@@ -114,6 +122,7 @@ export async function GET(request) {
         token,
         imageUrl: post.fields["Image URL"],
         caption,
+        caption: post.fields.Caption || "",
       });
       await waitForIgContainer(container.id, token, { attempts: 15, delayMs: 2000 });
     }
