@@ -46,7 +46,6 @@ export async function GET(request) {
       token,
       imageUrl: post.fields["Image URL"],
       caption: cleanQueueCaption(post.fields.Caption),
-      caption: post.fields.Caption || "",
     });
     await waitForIgContainer(container.id, token, { attempts: 15, delayMs: 2000 });
     published = await publishIgContainer(container.id, token, igUserId);
