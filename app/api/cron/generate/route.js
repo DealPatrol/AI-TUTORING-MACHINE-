@@ -13,6 +13,7 @@ import {
   releaseWinner,
   parseClaudeJson,
   rewriteCopy,
+  getGeminiApiKey,
 } from "@/lib/helpers";
 import { buildFirstComment } from "@/lib/growth";
 
@@ -86,7 +87,7 @@ Tiny label: "Day ${dayNumber}"`
         {
           method: "POST",
           headers: {
-            "x-goog-api-key": process.env.GEMINI_API_KEY,
+            "x-goog-api-key": getGeminiApiKey(),
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -105,7 +106,7 @@ Tiny label: "Day ${dayNumber}"`
         for (let i = 0; i < 18 && op; i++) {
           await new Promise((r) => setTimeout(r, 5000));
           const poll = await fetch(`https://generativelanguage.googleapis.com/v1beta/${op}`, {
-            headers: { "x-goog-api-key": process.env.GEMINI_API_KEY },
+            headers: { "x-goog-api-key": getGeminiApiKey() },
           });
           if (!poll.ok) continue;
           const data = await poll.json();
@@ -114,7 +115,7 @@ Tiny label: "Day ${dayNumber}"`
             data.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri;
           if (!uri) break;
           const dl = await fetch(uri, {
-            headers: { "x-goog-api-key": process.env.GEMINI_API_KEY },
+            headers: { "x-goog-api-key": getGeminiApiKey() },
             redirect: "follow",
           });
           if (!dl.ok) break;

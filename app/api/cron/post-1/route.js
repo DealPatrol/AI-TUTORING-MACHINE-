@@ -8,6 +8,8 @@ import {
   publishIgContainer,
   createIgImageContainer,
   markQueueFailed,
+  cleanQueueCaption,
+  getIgCredentials,
 } from "@/lib/helpers";
 
 export const maxDuration = 60;
@@ -32,6 +34,7 @@ export async function GET(request) {
       return Response.json({ error: "Missing Image URL" }, { status: 400 });
     }
 
+    const { token, igUserId } = getIgCredentials();
     const token = process.env.IG_ACCESS_TOKEN;
     const igUserId = process.env.IG_USER_ID;
     if (!token || !igUserId) {
@@ -42,7 +45,7 @@ export async function GET(request) {
       igUserId,
       token,
       imageUrl: post.fields["Image URL"],
-      caption: post.fields.Caption || "",
+      caption: cleanQueueCaption(post.fields.Caption),
     });
     await waitForIgContainer(container.id, token, { attempts: 15, delayMs: 2000 });
     published = await publishIgContainer(container.id, token, igUserId);

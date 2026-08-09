@@ -15,6 +15,9 @@ import {
   publishIgStory,
   safeAirtableUpdate,
   markQueueFailed,
+  extractQueueVideo,
+  cleanQueueCaption,
+  getIgCredentials,
 } from "@/lib/helpers";
 
 // Carousels build several child containers, so allow the full safe ceiling.
@@ -48,10 +51,16 @@ export async function GET(request) {
     }
 
     post = queue[0];
-    // Infer type from row contents when Type field is absent
-    if (post.fields["Video URL"]) type = "Reel";
+    // Infer type from row contents when Type field is absent. Video URLs may be
+    // embedded in the caption as [VIDEO_URL:...] by older pipeline versions.
+    const videoUrl = extractQueueVideo(post.fields);
+    if (videoUrl) type = "Reel";
     else if (post.fields["Slide URLs"]) type = "Carousel";
     else type = "Feed";
+    const caption = cleanQueueCaption(post.fields.Caption);
+
+    const retryCount = post.fields["Retry Count"] || 0;
+    const { token, igUserId } = getIgCredentials();
 
     const retryCount = post.fields["Retry Count"] || 0;
     const token = process.env.IG_ACCESS_TOKEN;
@@ -65,8 +74,8 @@ export async function GET(request) {
       container = await createIgReelContainer({
         igUserId,
         token,
-        videoUrl: post.fields["Video URL"],
-        caption: post.fields.Caption || "",
+        videoUrl,
+        caption,
         coverUrl: post.fields["Cover URL"] || post.fields["Image URL"] || undefined,
         shareToFeed: true,
       });
@@ -96,7 +105,7 @@ export async function GET(request) {
         igUserId,
         token,
         children: childIds,
-        caption: post.fields.Caption || "",
+        caption,
       });
       await waitForIgContainer(container.id, token, { attempts: 20, delayMs: 3000 });
     } else {
@@ -108,7 +117,7 @@ export async function GET(request) {
         igUserId,
         token,
         imageUrl: post.fields["Image URL"],
-        caption: post.fields.Caption || "",
+        caption,
       });
       await waitForIgContainer(container.id, token, { attempts: 15, delayMs: 2000 });
     }

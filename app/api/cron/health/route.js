@@ -1,6 +1,13 @@
 // HEALTH — pipeline fuel + env checks so silent broken days get caught early.
 
-import { checkCronAuth, airtableList, getTipDayNumber } from "@/lib/helpers";
+import {
+  checkCronAuth,
+  airtableList,
+  getTipDayNumber,
+  getIgCredentials,
+  getGeminiApiKey,
+  igGraphBase,
+} from "@/lib/helpers";
 
 export const maxDuration = 30;
 
@@ -11,6 +18,12 @@ export async function GET(request) {
 
   const warnings = [];
   const ok = [];
+  const geminiKey = getGeminiApiKey();
+  const geminiKeyMeta = {
+    length: geminiKey.length,
+    prefix: geminiKey.slice(0, 4),
+    looksLikeGoogleApiKey: geminiKey.startsWith("AIza") && geminiKey.length === 39,
+  };
 
   const envChecks = [
     ["AIRTABLE_API_KEY", process.env.AIRTABLE_API_KEY],
@@ -25,6 +38,34 @@ export async function GET(request) {
   for (const [name, val] of envChecks) {
     if (val) ok.push(`${name} set`);
     else warnings.push(`${name} missing`);
+  }
+
+  // Live Instagram token check — catches expired/malformed tokens before post time.
+  let igAccount = null;
+  let igTokenMeta = null;
+  try {
+    const { token, igUserId } = getIgCredentials();
+    // Shape only — never the token itself. IG tokens start with IGQ/IGAA/EAA and are 100+ chars.
+    igTokenMeta = { length: token.length, prefix: token.slice(0, 4), igUserIdLength: igUserId.length };
+    if (!token || !igUserId) {
+      const missing = [!token && "IG_ACCESS_TOKEN", !igUserId && "IG_USER_ID"].filter(Boolean);
+      warnings.push(`IG token check skipped: ${missing.join(" and ")} missing`);
+    } else {
+      // Query the IG account itself — works on both graph.facebook.com (EAA
+      // tokens) and graph.instagram.com (IGQ/IGAA tokens).
+      const meRes = await fetch(
+        `${igGraphBase()}/${igUserId}?fields=username&access_token=${encodeURIComponent(token)}`
+      );
+      const me = await meRes.json();
+      if (me.username) {
+        igAccount = me.username;
+        ok.push(`IG token valid (@${me.username})`);
+      } else {
+        warnings.push(`IG token check failed: ${JSON.stringify(me.error || me).slice(0, 300)}`);
+      }
+    }
+  } catch (err) {
+    warnings.push(`IG token check failed: ${err.message}`);
   }
 
   let stats = {
@@ -70,6 +111,9 @@ export async function GET(request) {
   return Response.json({
     ok: warnings.length === 0,
     tipDay: stats.tipDay,
+    igAccount,
+    igTokenMeta,
+    geminiKeyMeta,
     stats,
     warnings,
     ready: ok,
