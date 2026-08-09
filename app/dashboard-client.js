@@ -10,13 +10,7 @@ export default function DashboardClient() {
     failed: [],
     warnings: [],
     tipDay: 1,
-    stats: {
-      readyFeed: 0,
-      readyReels: 0,
-      readyCarousels: 0,
-      winnersWaiting: 0,
-      failed: 0,
-    },
+    stats: { readyFeed: 0, readyReels: 0, readyCarousels: 0, winnersWaiting: 0, failed: 0 },
   });
   const [triggering, setTriggering] = useState({});
   const [message, setMessage] = useState("");
@@ -29,9 +23,7 @@ export default function DashboardClient() {
         setData(result);
         setMessage("");
       } else {
-        setMessage(
-          "Could not load Airtable data. Check credentials in Vercel project settings.",
-        );
+        setMessage("Could not load Airtable data. Check credentials in Vercel project settings.");
       }
     } catch (err) {
       console.error("Fetch error:", err);
@@ -62,9 +54,7 @@ export default function DashboardClient() {
         }
         setTimeout(refresh, 1500);
       } else {
-        setMessage(
-          `✗ ${cronName} failed: ${result.error || result.data?.error || "unknown"}`,
-        );
+        setMessage(`✗ ${cronName} failed: ${result.error || result.data?.error || "unknown"}`);
       }
     } catch (err) {
       setMessage(`✗ ${cronName} error: ${err.message}`);
@@ -92,8 +82,8 @@ export default function DashboardClient() {
       <div className="dashboard-header">
         <h1>AI Tutor Machine</h1>
         <p>
-          Growth engine · Day {data?.tipDay || data?.stats?.tipDay || 1} streak
-          · Daily Reels · TIP replies · Insights
+          Growth engine · Day {data?.tipDay || data?.stats?.tipDay || 1} streak · Daily Reels ·
+          TIP replies · Insights
         </p>
         {data?.stats && (
           <div className="item-meta" style={{ marginTop: "1rem" }}>
@@ -102,9 +92,7 @@ export default function DashboardClient() {
             <span>{data.stats.readyReels || 0} reels</span>
             <span>{data.stats.readyCarousels || 0} carousels</span>
             <span>{data.stats.winnersWaiting || 0} winners</span>
-            {(data.stats.failed || 0) > 0 && (
-              <span>{data.stats.failed} failed</span>
-            )}
+            {(data.stats.failed || 0) > 0 && <span>{data.stats.failed} failed</span>}
           </div>
         )}
       </div>
@@ -268,46 +256,29 @@ export default function DashboardClient() {
               </div>
             ) : (
               data.queue.map((post) => {
-                const times = {
-                  1: "12:00 PM UTC",
-                  2: "2:00 PM UTC",
-                  3: "4:00 PM UTC",
-                };
+                const times = { 1: "12:00 PM UTC", 2: "2:00 PM UTC", 3: "4:00 PM UTC" };
                 const sequence = post.sequence || post.fields?.Sequence || "?";
                 return (
                   <div key={post.id} className="item">
                     <div className="item-title">
                       Post #{sequence} — {times[sequence] || "?"}
-                      <span
-                        style={{ fontSize: "0.85em", marginLeft: "0.5rem" }}
-                      >
-                        {post.hook}
-                      </span>
+                      <span style={{ fontSize: "0.85em", marginLeft: "0.5rem" }}>{post.hook}</span>
                     </div>
                     <div className="item-meta">
-                      <span className="status-badge status-ready">
-                        {post.status}
-                      </span>
+                      <span className="status-badge status-ready">{post.status}</span>
                       <span>Sequence: {sequence}</span>
                     </div>
                     {post.imageUrl && (
-                      <img
-                        src={post.imageUrl}
-                        alt={post.hook}
-                        className="item-image"
-                      />
+                      <img src={post.imageUrl} alt={post.hook} className="item-image" />
                     )}
-                    <div className="item-caption">
-                      {post.caption?.slice(0, 120)}...
-                    </div>
+                    <div className="item-caption">{post.caption?.slice(0, 120)}...</div>
                   </div>
                 );
               })
             )}
           </div>
           <div className="section-footer">
-            Auto-posts daily: 12 PM, 2 PM, 4 PM UTC (3 different hooks, visuals,
-            angles)
+            Auto-posts daily: 12 PM, 2 PM, 4 PM UTC (3 different hooks, visuals, angles)
           </div>
         </div>
 
@@ -329,12 +300,8 @@ export default function DashboardClient() {
                   <div className="item-meta">
                     <span>{winner.likes?.toLocaleString()} likes</span>
                     <span>{winner.comments?.toLocaleString()} comments</span>
-                    {winner.growthScore != null && (
-                      <span>score {winner.growthScore}</span>
-                    )}
-                    <span className="status-badge status-new">
-                      {winner.status}
-                    </span>
+                    {winner.growthScore != null && <span>score {winner.growthScore}</span>}
+                    <span className="status-badge status-new">{winner.status}</span>
                   </div>
                   <div className="item-caption">{winner.caption}</div>
                 </div>
@@ -380,84 +347,38 @@ export default function DashboardClient() {
       <div className="setup-section">
         <h3>✅ System Live — All Systems Configured</h3>
         <p>
-          Connected to Instagram <strong>@unlocking__ai</strong>. Every
-          credential is set and the automated pipeline is running.
+          Connected to Instagram <strong>@unlocking__ai</strong>. Every credential is set and the
+          automated pipeline is running.
         </p>
         <ul style={{ marginLeft: "2rem", marginBottom: "1rem" }}>
-          <li>
-            <code>AIRTABLE_API_KEY</code> - Configured ✓
-          </li>
-          <li>
-            <code>AIRTABLE_BASE_ID</code> - Configured ✓
-          </li>
-          <li>
-            <code>ANTHROPIC_API_KEY</code> - Configured ✓
-          </li>
-          <li>
-            <code>GEMINI_API_KEY</code> - Configured ✓
-          </li>
-          <li>
-            <code>APIFY_TOKEN</code> - Configured ✓
-          </li>
-          <li>
-            <code>APIFY_TASK_ID</code> - Configured ✓
-          </li>
-          <li>
-            <code>CRON_SECRET</code> - Configured ✓
-          </li>
-          <li>
-            <code>IG_ACCESS_TOKEN</code> - Configured ✓
-          </li>
-          <li>
-            <code>IG_USER_ID</code> - Configured ✓
-          </li>
+          <li><code>AIRTABLE_API_KEY</code> - Configured ✓</li>
+          <li><code>AIRTABLE_BASE_ID</code> - Configured ✓</li>
+          <li><code>ANTHROPIC_API_KEY</code> - Configured ✓</li>
+          <li><code>GEMINI_API_KEY</code> - Configured ✓</li>
+          <li><code>APIFY_TOKEN</code> - Configured ✓</li>
+          <li><code>APIFY_TASK_ID</code> - Configured ✓</li>
+          <li><code>CRON_SECRET</code> - Configured ✓</li>
+          <li><code>IG_ACCESS_TOKEN</code> - Configured ✓</li>
+          <li><code>IG_USER_ID</code> - Configured ✓</li>
         </ul>
         <p>
-          <strong>
-            Three-Vector Automated Schedule (6 posts/day: 3 images + 3 reels):
-          </strong>
+          <strong>Three-Vector Automated Schedule (6 posts/day: 3 images + 3 reels):</strong>
         </p>
         <ol style={{ marginLeft: "2rem", marginBottom: "1rem" }}>
-          <li>
-            <strong>Research</strong> — Mondays 9 AM UTC: Finds high-performing
-            posts with videos (500+ likes)
-          </li>
-          <li>
-            <strong>Generate</strong> — Daily 7 AM UTC: Creates 3 captions +
-            pulls video URLs from Apify
-          </li>
-          <li>
-            <strong>Image #1</strong> — Daily 12 PM UTC: Posts image with
-            caption
-          </li>
-          <li>
-            <strong>Reel #1</strong> — Daily 1 PM UTC: Posts Apify video with
-            same caption
-          </li>
-          <li>
-            <strong>Image #2</strong> — Daily 2 PM UTC: Posts image with caption
-          </li>
-          <li>
-            <strong>Reel #2</strong> — Daily 3 PM UTC: Posts Apify video with
-            same caption
-          </li>
-          <li>
-            <strong>Image #3</strong> — Daily 4 PM UTC: Posts image with caption
-          </li>
-          <li>
-            <strong>Reel #3</strong> — Daily 5 PM UTC: Posts Apify video with
-            same caption
-          </li>
+          <li><strong>Research</strong> — Mondays 9 AM UTC: Finds high-performing posts with videos (500+ likes)</li>
+          <li><strong>Generate</strong> — Daily 7 AM UTC: Creates 3 captions + pulls video URLs from Apify</li>
+          <li><strong>Image #1</strong> — Daily 12 PM UTC: Posts image with caption</li>
+          <li><strong>Reel #1</strong> — Daily 1 PM UTC: Posts Apify video with same caption</li>
+          <li><strong>Image #2</strong> — Daily 2 PM UTC: Posts image with caption</li>
+          <li><strong>Reel #2</strong> — Daily 3 PM UTC: Posts Apify video with same caption</li>
+          <li><strong>Image #3</strong> — Daily 4 PM UTC: Posts image with caption</li>
+          <li><strong>Reel #3</strong> — Daily 5 PM UTC: Posts Apify video with same caption</li>
         </ol>
         <p>
-          <strong>Vector 1 (Volume):</strong> 6 posts per day{" "}
-          <strong>Vector 2 (Velocity):</strong> All 6 clustered in 5-hour window
-          (12pm-5pm) <strong>Vector 3 (Signal Density):</strong> 3 unique angles
-          as images + videos for max reach
+          <strong>Vector 1 (Volume):</strong> 6 posts per day <strong>Vector 2 (Velocity):</strong> All 6 clustered in 5-hour window (12pm-5pm) <strong>Vector 3 (Signal Density):</strong> 3 unique angles as images + videos for max reach
         </p>
         <p>
-          Use the Image and Reel buttons above to test, or Generate to create 3
-          new variations with Apify videos daily.
+          Use the Image and Reel buttons above to test, or Generate to create 3 new variations with Apify videos daily.
         </p>
       </div>
       {data?.failed?.length > 0 && (
@@ -481,15 +402,13 @@ export default function DashboardClient() {
       <div className="setup-section">
         <h3>Growth engine v2</h3>
         <p>
-          Daily Reel at <strong>18:00 UTC</strong>. If Veo fails, a carousel
-          ships the same day. Comment <strong>TIP</strong> replies go out at
-          19:00 & 21:00 UTC.
+          Daily Reel at <strong>18:00 UTC</strong>. If Veo fails, a carousel ships the same day.
+          Comment <strong>TIP</strong> replies go out at 19:00 & 21:00 UTC.
         </p>
         <p>
-          Queue fields: Type, Video URL, Cover URL, First Comment, Slide URLs,
-          Story Text, Story Image URL, Day Number, Bonus Prompt, IG Media ID,
-          Reach, Saves, Shares, Plays, Replied Comment IDs, Fallback Used, Last
-          Error. Status options: Ready, Posted, Failed.
+          Queue fields: Type, Video URL, Cover URL, First Comment, Slide URLs, Story Text,
+          Story Image URL, Day Number, Bonus Prompt, IG Media ID, Reach, Saves, Shares, Plays,
+          Replied Comment IDs, Fallback Used, Last Error. Status options: Ready, Posted, Failed.
         </p>
       </div>
     </div>
