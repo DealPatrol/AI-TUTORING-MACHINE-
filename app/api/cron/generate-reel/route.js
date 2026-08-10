@@ -71,7 +71,7 @@ Tiny label at bottom: "Follow for daily AI tips"`
       contentType: "image/png",
     });
 
-    const visualScenes = Array.isArray(content.visualScenes)
+    const visualScenes = Array.isArray(content.visualScenes) && content.visualScenes.length > 0
       ? content.visualScenes.slice(0, 3).join("\n")
       : content.videoPrompt ||
         `Show a creator encountering the problem, using the AI tip on a device, then reacting to the useful result.`;
