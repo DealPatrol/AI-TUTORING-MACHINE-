@@ -71,12 +71,31 @@ Tiny label at bottom: "Follow for daily AI tips"`
       contentType: "image/png",
     });
 
-    const videoPrompt =
-      content.videoPrompt ||
-      `Vertical 9:16 Instagram Reel, 8 seconds. Soft cream background, bold dark charcoal kinetic typography.
-On-screen text in order: "Day ${dayNumber}", "${content.hook}", then ${(content.beats || []).map((b) => `"${b}"`).join(", ")}, then "Follow for daily AI tips".
-Small friendly robot mascot reacts in the corner. Flat modern motion graphics, no photoreal people.
-Clear energetic teacher voiceover: "${content.voiceover || content.hook}". Subtle upbeat music. Large readable mobile text.`;
+    const visualScenes = Array.isArray(content.visualScenes)
+      ? content.visualScenes.slice(0, 3).join("\n")
+      : content.videoPrompt ||
+        `Show a creator encountering the problem, using the AI tip on a device, then reacting to the useful result.`;
+    const videoPrompt = `Create an ACTUAL live-action vertical 9:16 social video, 8 seconds, not a graphic.
+Topic: "${content.hook}"
+
+Three distinct moving shots with fast, natural cuts:
+${visualScenes}
+
+Visual requirements:
+- Real people, hands, devices, rooms, or objects appropriate to the topic
+- Continuous subject movement and noticeable camera movement in every shot
+- Cinematic natural lighting, shallow depth of field, crisp realistic detail
+- Show the idea through actions and reactions, like creator B-roll
+- Energetic pacing designed for an Instagram Reel
+
+Strictly forbidden:
+- No static poster, title card, slideshow, presentation, or single still image
+- No cream-background graphic, flat illustration, robot mascot, or text-only animation
+- Do not spend the video showing a phone/computer screen straight-on
+- No logos, watermarks, captions, or generated UI text
+
+Native energetic teacher voiceover: "${content.voiceover || content.hook}"
+Subtle upbeat music and realistic ambient sound. End on a satisfying moving result, not an end card.`;
 
     const firstComment =
       content.firstComment ||
