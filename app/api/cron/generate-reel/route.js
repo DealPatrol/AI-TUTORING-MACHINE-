@@ -76,11 +76,15 @@ Tiny label at bottom: "Follow for daily AI tips"`
       : content.videoPrompt ||
         `Use wide physical B-roll to symbolize the problem, a moving environment or self-moving prop, then a waist-up human reaction. Keep hands out of frame and show no screen or interface.`;
     const rawVoiceover = String(content.voiceover || content.hook || "")
-      .replace(/\bfollow\b[\s\S]*$/i, "")
+      .replace(/\bfollow for daily AI tips\b[.!?]*\s*$/i, "")
       .replace(/[.!?]+$/g, "")
       .trim();
-    const voiceoverCore = rawVoiceover.split(/\s+/).filter(Boolean).slice(0, 9).join(" ");
-    const voiceover = `${voiceoverCore || content.hook}. Follow for daily AI tips.`;
+    const voiceoverCore = (rawVoiceover || String(content.hook || "").trim())
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 9)
+      .join(" ");
+    const voiceover = `${voiceoverCore}. Follow for daily AI tips.`;
     const videoPrompt = `Create an ACTUAL live-action vertical 9:16 social video, 8 seconds, not a graphic.
 Topic: "${content.hook}"
 
