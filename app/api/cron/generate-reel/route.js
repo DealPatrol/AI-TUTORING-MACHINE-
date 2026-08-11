@@ -74,7 +74,7 @@ Tiny label at bottom: "Follow for daily AI tips"`
     const visualScenes = Array.isArray(content.visualScenes) && content.visualScenes.length > 0
       ? content.visualScenes.slice(0, 3).join("\n")
       : content.videoPrompt ||
-        `Show a creator encountering the problem, using the AI tip on a device, then reacting to the useful result.`;
+        `Use physical creator B-roll to symbolize the problem, a hands-on action with real props, then a human reaction to the useful result. Do not show any screen or interface.`;
     const videoPrompt = `Create an ACTUAL live-action vertical 9:16 social video, 8 seconds, not a graphic.
 Topic: "${content.hook}"
 
@@ -82,17 +82,21 @@ Three distinct moving shots with fast, natural cuts:
 ${visualScenes}
 
 Visual requirements:
-- Real people, hands, devices, rooms, or objects appropriate to the topic
+- Real people, hands, rooms, physical props, paper, camera gear, or objects appropriate to the topic
 - Continuous subject movement and noticeable camera movement in every shot
 - Cinematic natural lighting, shallow depth of field, crisp realistic detail
-- Show the idea through actions and reactions, like creator B-roll
+- Translate digital concepts into physical visual metaphors and human actions
+- If a device is unavoidable, show only its back or edge; its display must be fully out of frame, powered off, heavily defocused, or hidden by glare
+- Keep all backgrounds and reflective surfaces free of legible text
 - Energetic pacing designed for an Instagram Reel
 
 Strictly forbidden:
 - No static poster, title card, slideshow, presentation, or single still image
 - No cream-background graphic, flat illustration, robot mascot, or text-only animation
-- Do not spend the video showing a phone/computer screen straight-on
-- No logos, watermarks, captions, or generated UI text
+- Absolutely no readable or recognizable phone, laptop, tablet, television, or monitor display
+- No app interface, website, browser, ChatGPT window, code editor, terminal, generated UI, keyboard close-up with a visible screen, or over-the-shoulder screen shot
+- No legible words, letters, numbers, captions, labels, logos, signs, or watermarks anywhere in the generated video
+- Never invent fake screen content; replace all screen-based demonstrations with physical B-roll
 
 Native energetic teacher voiceover: "${content.voiceover || content.hook}"
 Subtle upbeat music and realistic ambient sound. End on a satisfying moving result, not an end card.`;
