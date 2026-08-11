@@ -93,7 +93,11 @@ Tiny label: "Day ${dayNumber}"`
           body: JSON.stringify({
             instances: [
               {
-                prompt: `Vertical 9:16 Instagram Reel, 8 seconds, soft cream background, bold kinetic typography showing "${content.hook}", friendly robot mascot, flat motion graphics, teacher voiceover about the tip, upbeat music.`,
+                prompt: `Create an actual live-action vertical 9:16 Instagram video, 8 seconds, about "${content.hook}".
+Use three distinct cinematic shots: a creator encounters the problem, uses the AI tip with natural hand and device movement, then reacts to the useful real-world result.
+Real people, hands, objects, natural lighting, shallow depth of field, continuous subject and camera motion, quick natural cuts, energetic creator B-roll.
+No static graphic, poster, slideshow, cream background, flat illustration, robot mascot, text-only animation, logos, or watermarks.
+Energetic teacher voiceover explaining the tip, subtle upbeat music, realistic ambient sound.`,
               },
             ],
             parameters: { aspectRatio: "9:16" },
