@@ -74,7 +74,13 @@ Tiny label at bottom: "Follow for daily AI tips"`
     const visualScenes = Array.isArray(content.visualScenes) && content.visualScenes.length > 0
       ? content.visualScenes.slice(0, 3).join("\n")
       : content.videoPrompt ||
-        `Use physical creator B-roll to symbolize the problem, a hands-on action with real props, then a human reaction to the useful result. Do not show any screen or interface.`;
+        `Use wide physical B-roll to symbolize the problem, a moving environment or self-moving prop, then a waist-up human reaction. Keep hands out of frame and show no screen or interface.`;
+    const rawVoiceover = String(content.voiceover || content.hook || "")
+      .replace(/\bfollow\b[\s\S]*$/i, "")
+      .replace(/[.!?]+$/g, "")
+      .trim();
+    const voiceoverCore = rawVoiceover.split(/\s+/).filter(Boolean).slice(0, 9).join(" ");
+    const voiceover = `${voiceoverCore || content.hook}. Follow for daily AI tips.`;
     const videoPrompt = `Create an ACTUAL live-action vertical 9:16 social video, 8 seconds, not a graphic.
 Topic: "${content.hook}"
 
@@ -82,7 +88,8 @@ Three distinct moving shots with fast, natural cuts:
 ${visualScenes}
 
 Visual requirements:
-- Real people, hands, rooms, physical props, paper, camera gear, or objects appropriate to the topic
+- Frame people only in medium, waist-up, or wide shots with both hands outside the frame
+- Use rooms, environments, camera movement, silhouettes, reflections, or self-moving physical props appropriate to the topic
 - Continuous subject movement and noticeable camera movement in every shot
 - Cinematic natural lighting, shallow depth of field, crisp realistic detail
 - Translate digital concepts into physical visual metaphors and human actions
@@ -97,8 +104,11 @@ Strictly forbidden:
 - No app interface, website, browser, ChatGPT window, code editor, terminal, generated UI, keyboard close-up with a visible screen, or over-the-shoulder screen shot
 - No legible words, letters, numbers, captions, labels, logos, signs, or watermarks anywhere in the generated video
 - Never invent fake screen content; replace all screen-based demonstrations with physical B-roll
+- No close-up or focal shot of hands, fingers, feet, teeth, or other anatomy prone to distortion
+- Keep every hand and finger completely outside the frame; nobody may hold, tear, press, type on, point at, or present an object
+- No morphing anatomy, extra fingers, fused limbs, body-object blending, or changing object shapes
 
-Native energetic teacher voiceover: "${content.voiceover || content.hook}"
+Native energetic teacher voiceover, spoken completely with no cutoff: "${voiceover}"
 Subtle upbeat music and realistic ambient sound. End on a satisfying moving result, not an end card.`;
 
     const firstComment =
