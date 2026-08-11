@@ -94,9 +94,11 @@ Tiny label: "Day ${dayNumber}"`
             instances: [
               {
                 prompt: `Create an actual live-action vertical 9:16 Instagram video, 8 seconds, about "${content.hook}".
-Use three distinct cinematic shots: a creator encounters the problem, uses the AI tip with natural hand and device movement, then reacts to the useful real-world result.
-Real people, hands, objects, natural lighting, shallow depth of field, continuous subject and camera motion, quick natural cuts, energetic creator B-roll.
-No static graphic, poster, slideshow, cream background, flat illustration, robot mascot, text-only animation, logos, or watermarks.
+Use three distinct cinematic physical B-roll shots: symbolize the problem with real props, show a hands-on physical action, then show a human reacting to the useful real-world result.
+Real people, hands, paper, camera gear, rooms and physical objects; natural lighting, shallow depth of field, continuous subject and camera motion, quick natural cuts.
+Translate every digital concept into a physical visual metaphor. If a device is unavoidable, show only its back or edge with its display fully out of frame, powered off, or heavily defocused.
+Absolutely no readable phone, laptop, tablet, television, or monitor display. No app interface, website, browser, ChatGPT window, code, terminal, generated UI, over-the-shoulder screen shot, legible words, letters, numbers, captions, labels, signs, logos, or watermarks.
+No static graphic, poster, slideshow, cream background, flat illustration, robot mascot, or text-only animation.
 Energetic teacher voiceover explaining the tip, subtle upbeat music, realistic ambient sound.`,
               },
             ],
