@@ -5,6 +5,7 @@ import {
   airtableList,
   listIgComments,
   replyIgComment,
+  sendIgPrivateReply,
   safeAirtableUpdate,
   getIgCredentials,
 } from "@/lib/helpers";
@@ -21,9 +22,9 @@ export async function GET(request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { token } = getIgCredentials();
-  if (!token) {
-    return Response.json({ error: "IG_ACCESS_TOKEN missing" }, { status: 400 });
+  const { token, igUserId } = getIgCredentials();
+  if (!token || !igUserId) {
+    return Response.json({ error: "IG_ACCESS_TOKEN or IG_USER_ID missing" }, { status: 400 });
   }
 
   const ownUsername = (process.env.IG_USERNAME || "").replace(/^@/, "").toLowerCase();
@@ -100,12 +101,36 @@ export async function GET(request) {
         if (ownUsername && String(c.username || "").toLowerCase() === ownUsername) continue;
         if (!PLAYBOOK_RE.test(c.text || "")) continue;
         try {
-          await replyIgComment(c.id, message, token);
+          // The playbook itself stays private so every viewer must leave their
+          // own HOW comment. A generic public confirmation contains no value
+          // someone else can reuse.
+          const privateReply = await sendIgPrivateReply({
+            igUserId,
+            commentId: c.id,
+            message,
+            token,
+          });
+          try {
+            await replyIgComment(
+              c.id,
+              "Sent privately ✅ Check your Instagram inbox or Message Requests.",
+              token
+            );
+          } catch (confirmationErr) {
+            // The DM already succeeded; don't retry and risk a duplicate just
+            // because the optional public confirmation failed.
+            console.warn("Public DM confirmation failed:", confirmationErr.message);
+          }
           alreadySet.add(c.id);
           replied += 1;
-          details.push({ mediaId, commentId: c.id, username: c.username });
+          details.push({
+            mediaId,
+            commentId: c.id,
+            username: c.username,
+            privateMessageId: privateReply.message_id,
+          });
         } catch (err) {
-          console.warn("Playbook reply failed:", err.message);
+          console.warn("Private playbook delivery failed:", err.message);
         }
       }
 

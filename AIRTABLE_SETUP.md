@@ -37,7 +37,7 @@ Fields:
 | **Story Text** | Single line text | Overlay copy for Stories |
 | **Story Image URL** | URL | 9:16 Story graphic (posted after feed/reel) |
 | **Day Number** | Number | Tip streak (“Day 12”) |
-| **Bonus Prompt** | Long text | Three-step playbook sent when someone comments HOW |
+| **Bonus Prompt** | Long text | Three-step playbook privately DMed when someone comments HOW |
 | **IG Media ID** | Single line text | Set on publish — needed for engage + insights |
 | **Reach / Saves / Shares / Plays** | Number | Filled by insights cron |
 | **Replied Comment IDs** | Long text | JSON array — avoids duplicate HOW playbook replies |
@@ -64,6 +64,21 @@ Also add **Processing** to Winners Status (used to claim a winner before long ge
 8. **Health** (daily 11:00 UTC) → warns if winners/queue fuel is low  
 
 Optional: Engage / Insights / generate-carousel can be re-enabled in `vercel.json` after adding those Airtable fields.
+
+## Private HOW playbook DMs
+
+The engage cron sends the playbook through Meta's private-reply endpoint, then
+posts only a generic public confirmation. Meta allows one private reply per
+comment within seven days. Followers receive it in their Inbox; non-followers
+may receive it in Message Requests.
+
+Required Meta permissions:
+
+- Instagram Login token: `instagram_business_basic`, `instagram_business_manage_comments`
+- Facebook Login/Page token: `instagram_basic`, `instagram_manage_comments`, `pages_read_engagement`
+
+If private delivery fails, the playbook is **not** exposed publicly and the
+comment remains eligible for a later retry.
 
 ## Testing
 

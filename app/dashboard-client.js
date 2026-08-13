@@ -83,7 +83,7 @@ export default function DashboardClient() {
         <h1>AI Tutor Machine</h1>
         <p>
           Growth engine · Day {data?.tipDay || data?.stats?.tipDay || 1} streak · Daily Reels ·
-          HOW playbooks · Insights
+          HOW playbook DMs · Insights
         </p>
         {data?.stats && (
           <div className="item-meta" style={{ marginTop: "1rem" }}>
@@ -190,7 +190,7 @@ export default function DashboardClient() {
           ["generate-carousel", "Generate Carousel", "#059669"],
           ["post", "Post Feed/Carousel", "#ec4899"],
           ["post-reel", "Post Reel", "#be185d"],
-          ["engage", "Send HOW playbooks", "#0ea5e9"],
+          ["engage", "DM HOW playbooks", "#0ea5e9"],
           ["insights", "Pull Insights", "#f59e0b"],
           ["health", "Health Check", "#64748b"],
         ].map(([name, label, color]) => (
@@ -376,7 +376,7 @@ export default function DashboardClient() {
         <h3>Growth engine v2</h3>
         <p>
           Daily 16-second Reel at <strong>18:00 UTC</strong>. If Veo fails, a carousel ships the same day.
-          Comment <strong>HOW</strong> playbook replies go out at 19:00 & 21:00 UTC.
+          Comment <strong>HOW</strong> playbook DMs go out at 19:00 & 21:00 UTC.
         </p>
         <p>
           Queue fields: Type, Video URL, Cover URL, First Comment, Slide URLs, Story Text,

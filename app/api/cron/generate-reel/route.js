@@ -100,7 +100,7 @@ Tiny label at bottom: "Follow for daily AI tips"`
       String(generatedVoiceovers[1] || "").replace(/\bcomment\s+how\b[\s\S]*$/i, ""),
       10
     );
-    const voiceoverTwo = `${payoff ? `${payoff}. ` : ""}Comment HOW and I'll send you the AI playbook.`;
+    const voiceoverTwo = `${payoff ? `${payoff}. ` : ""}Comment HOW and I'll DM you the AI playbook.`;
 
     const sharedVisualRules = `Visual requirements:
 - Frame people only in medium, waist-up, or wide shots with both hands outside the frame
@@ -156,7 +156,7 @@ Subtle upbeat music and realistic ambient sound. ${ending}`;
     const firstComment =
       content.firstComment ||
       buildFirstComment({
-        cta: `Day ${dayNumber} — Comment HOW and I'll send you the AI playbook.`,
+        cta: `Day ${dayNumber} — Comment HOW and I'll DM you the AI playbook.`,
       });
 
     let videoUrl = null;
