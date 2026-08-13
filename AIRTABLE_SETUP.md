@@ -37,10 +37,10 @@ Fields:
 | **Story Text** | Single line text | Overlay copy for Stories |
 | **Story Image URL** | URL | 9:16 Story graphic (posted after feed/reel) |
 | **Day Number** | Number | Tip streak (“Day 12”) |
-| **Bonus Prompt** | Long text | Sent when someone comments TIP |
+| **Bonus Prompt** | Long text | Three-step playbook sent when someone comments HOW |
 | **IG Media ID** | Single line text | Set on publish — needed for engage + insights |
 | **Reach / Saves / Shares / Plays** | Number | Filled by insights cron |
-| **Replied Comment IDs** | Long text | JSON array — avoids double TIP replies |
+| **Replied Comment IDs** | Long text | JSON array — avoids duplicate HOW playbook replies |
 | **Fallback Used** | Checkbox | True when Veo failed and carousel shipped instead |
 | **Last Error** | Long text | Failure reason |
 
