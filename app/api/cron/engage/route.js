@@ -1,4 +1,4 @@
-// ENGAGE — reply to "TIP" comments with a bonus prompt (makes the CTA real → more comments → more reach).
+// ENGAGE — deliver the promised playbook when someone comments HOW.
 
 import {
   checkCronAuth,
@@ -12,8 +12,9 @@ import { pickBonusPrompt, tipReplyMessage } from "@/lib/growth";
 
 export const maxDuration = 60;
 
-// Only match short engagement bait replies, not our own long CTA that contains "TIP"
-const TIP_RE = /^\s*(tip|tips|prompt|send\s*it|bonus)\s*[.!?]?\s*$/i;
+// Match short keyword replies, not longer comments that happen to contain the word.
+// Keep legacy TIP aliases so older Reels continue delivering their promised bonus.
+const PLAYBOOK_RE = /^\s*(how|tip|tips|prompt|send\s*it|bonus|playbook)\s*[.!?]?\s*$/i;
 
 export async function GET(request) {
   if (!checkCronAuth(request)) {
@@ -97,14 +98,14 @@ export async function GET(request) {
       for (const c of comments) {
         if (!c?.id || alreadySet.has(c.id)) continue;
         if (ownUsername && String(c.username || "").toLowerCase() === ownUsername) continue;
-        if (!TIP_RE.test(c.text || "")) continue;
+        if (!PLAYBOOK_RE.test(c.text || "")) continue;
         try {
           await replyIgComment(c.id, message, token);
           alreadySet.add(c.id);
           replied += 1;
           details.push({ mediaId, commentId: c.id, username: c.username });
         } catch (err) {
-          console.warn("TIP reply failed:", err.message);
+          console.warn("Playbook reply failed:", err.message);
         }
       }
 
