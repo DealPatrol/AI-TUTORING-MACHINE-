@@ -98,7 +98,7 @@ Tiny label at bottom: "Follow for daily AI tips"`
       normalizeVoiceover(generatedVoiceovers[0] || content.hook, 15) || String(content.hook);
     const payoff = normalizeVoiceover(
       String(generatedVoiceovers[1] || "").replace(/\bcomment\s+how\b[\s\S]*$/i, ""),
-      5
+      10
     );
     const voiceoverTwo = `${payoff ? `${payoff}. ` : ""}Comment HOW and I'll send you the AI playbook.`;
 
@@ -163,13 +163,13 @@ Subtle upbeat music and realistic ambient sound. ${ending}`;
     let veoModel = null;
 
     try {
-      // Generate both 8-second segments concurrently, then stitch into one
-      // 16-second Reel. Parallel generation keeps the cron within 300 seconds.
+      // Generate both 8-second segments concurrently, reserving enough of the
+      // 300-second ceiling for stitching, uploading, and queueing the result.
       const clips = await Promise.all(
         clipPrompts.map((prompt) =>
           generateVeoReelWithFallback(prompt, {
             aspectRatio: "9:16",
-            overallBudgetMs: 210000,
+            overallBudgetMs: 150000,
           })
         )
       );
