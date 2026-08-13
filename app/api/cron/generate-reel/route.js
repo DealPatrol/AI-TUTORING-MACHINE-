@@ -98,7 +98,7 @@ Tiny label at bottom: "Follow for daily AI tips"`
       normalizeVoiceover(generatedVoiceovers[0] || content.hook, 15) || String(content.hook);
     const payoff = normalizeVoiceover(
       String(generatedVoiceovers[1] || "").replace(/\bcomment\s+how\b[\s\S]*$/i, ""),
-      10
+      5
     );
     const voiceoverTwo = `${payoff ? `${payoff}. ` : ""}Comment HOW and I'll DM you the AI playbook.`;
 
