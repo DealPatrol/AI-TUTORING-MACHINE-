@@ -1,0 +1,9 @@
+{
+  "install": "pnpm install",
+  "terminals": [
+    {
+      "name": "Next.js Dev Server",
+      "command": "pnpm dev"
+    }
+  ]
+}

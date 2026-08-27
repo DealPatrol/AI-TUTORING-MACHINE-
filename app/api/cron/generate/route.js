@@ -93,7 +93,14 @@ Tiny label: "Day ${dayNumber}"`
           body: JSON.stringify({
             instances: [
               {
-                prompt: `Vertical 9:16 Instagram Reel, 8 seconds, soft cream background, bold kinetic typography showing "${content.hook}", friendly robot mascot, flat motion graphics, teacher voiceover about the tip, upbeat music.`,
+                prompt: `Create an actual live-action vertical 9:16 Instagram video, 8 seconds, about "${content.hook}".
+Use three distinct cinematic physical B-roll shots: symbolize the problem with a moving environment, use a self-moving prop or camera move, then show a waist-up human reacting to the useful real-world result.
+Frame people only in medium or wide shots with both hands outside the frame. Use environments, silhouettes, reflections and self-moving objects; natural lighting, shallow depth of field, continuous subject and camera motion, quick natural cuts.
+Translate every digital concept into a physical visual metaphor. If a device is unavoidable, show only its back or edge with its display fully out of frame, powered off, or heavily defocused.
+Absolutely no readable phone, laptop, tablet, television, or monitor display. No app interface, website, browser, ChatGPT window, code, terminal, generated UI, over-the-shoulder screen shot, legible words, letters, numbers, captions, labels, signs, logos, or watermarks.
+No close-up or focal shot of hands, fingers, feet, teeth, or other anatomy prone to distortion. Keep all hands and fingers completely outside the frame; nobody may hold, tear, press, type on, point at, or present an object. No morphing anatomy, extra fingers, fused limbs, or body-object blending.
+No static graphic, poster, slideshow, cream background, flat illustration, robot mascot, or text-only animation.
+One complete energetic teacher voiceover sentence of no more than 15 words, subtle upbeat music, realistic ambient sound.`,
               },
             ],
             parameters: { aspectRatio: "9:16" },
