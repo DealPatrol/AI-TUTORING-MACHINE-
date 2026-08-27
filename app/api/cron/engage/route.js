@@ -22,6 +22,9 @@ export async function GET(request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { token } = getIgCredentials();
+  if (!token) {
+    return Response.json({ error: "IG_ACCESS_TOKEN missing" }, { status: 400 });
   const { token, igUserId } = getIgCredentials();
   if (!token || !igUserId) {
     return Response.json({ error: "IG_ACCESS_TOKEN or IG_USER_ID missing" }, { status: 400 });
