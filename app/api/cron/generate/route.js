@@ -15,7 +15,7 @@ import {
   rewriteCopy,
   getGeminiApiKey,
 } from "@/lib/helpers";
-import { buildFirstComment } from "@/lib/growth";
+import { feedGrowthPrompt, buildFirstComment, storyOverlayPrompt } from "@/lib/growth";
 
 export const maxDuration = 180;
 
@@ -38,21 +38,7 @@ export async function GET(request) {
     const dayNumber = await getTipDayNumber();
     const source = (winner.fields.Caption || "").slice(0, 1500);
 
-    const content = parseClaudeJson(
-      await rewriteCopy(
-        `You write for @unlocking__ai, a beginner-friendly AI tips Instagram.
-Based on this winning idea (do NOT copy wording):
-"""${source}"""
-
-Write ONE original post. Respond with ONLY valid JSON:
-{
-  "hook": "max 8 word punchy headline",
-  "subtext": "max 15 word supporting line",
-  "caption": "100-150 word Instagram caption ending with a question and 5 hashtags",
-  "firstComment": "short CTA + hashtags"
-}`
-      )
-    );
+    const content = parseClaudeJson(await rewriteCopy(feedGrowthPrompt(source, dayNumber)));
 
     let imageBuffer;
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -78,6 +64,20 @@ Tiny label: "Day ${dayNumber}"`
       access: "public",
       contentType: "image/png",
     });
+
+    let storyUrl = null;
+    try {
+      const story = await generateGeminiImage(
+        storyOverlayPrompt(content.hook, content.storyText, dayNumber)
+      );
+      const storyBlob = await put(`stories/feed-${stamp}.png`, story.buffer, {
+        access: "public",
+        contentType: "image/png",
+      });
+      storyUrl = storyBlob.url;
+    } catch (err) {
+      console.warn("Feed story graphic skipped:", err.message);
+    }
 
     // Optional Veo reel — never block the feed post if this fails
     let videoUrl = null;
@@ -147,8 +147,11 @@ One complete energetic teacher voiceover sentence of no more than 15 words, subt
       "Video URL": videoUrl || undefined,
       "Cover URL": videoUrl ? blob.url : undefined,
       "First Comment": content.firstComment || buildFirstComment(),
+      "Story Text": content.storyText || content.hook,
+      "Story Image URL": storyUrl || undefined,
       "Source URL": winner.fields["Post URL"] || "",
       "Day Number": dayNumber,
+      "Bonus Prompt": content.bonusPrompt || "",
       Sequence: 1,
     });
 

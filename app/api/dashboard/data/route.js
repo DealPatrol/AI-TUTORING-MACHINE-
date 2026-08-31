@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { airtableList, getTipDayNumber, appBaseUrl } from "@/lib/helpers";
+import { loadGrowthHistory, summarizeGrowth, buildGrowthRecommendations } from "@/lib/growth-stats";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,15 @@ export async function GET() {
         dayNumber: r.fields["Day Number"],
       }))
       .sort((a, b) => (b.reach || 0) - (a.reach || 0));
+
+    const history = await loadGrowthHistory();
+    const summary = summarizeGrowth(history, topPosted);
+    const recommendations = buildGrowthRecommendations({
+      posted: topPosted,
+      summary,
+      readyReels,
+      readyFeed: readyFeed + readyCarousels,
+    });
 
     return NextResponse.json({
       tipDay,
@@ -86,7 +96,16 @@ export async function GET() {
         failed: failed.length,
         tipDay,
       },
-      scheduleHint: "Reel posts daily 18:00 UTC · engage 19:00 & 21:00 · insights 22:00",
+      growth: {
+        history,
+        latest: summary.latest,
+        followerDelta7d: summary.followerDelta7d,
+        bestFormat: summary.bestFormat,
+        formats: summary.formats,
+        recommendations,
+      },
+      scheduleHint:
+        "Reel 18:00 · engage 19:00/21:00 · boost Story 20:00 · insights 22:00 · recap Sundays · recycle Mondays",
       appUrl: appBaseUrl(),
     });
   } catch (error) {

@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "node --experimental-detect-module scripts/test-growth-stats.mjs"
   },
   "dependencies": {
     "@vercel/blob": "^0.27.0",

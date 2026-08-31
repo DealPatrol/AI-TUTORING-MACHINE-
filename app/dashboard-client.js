@@ -11,6 +11,7 @@ export default function DashboardClient() {
     warnings: [],
     tipDay: 1,
     stats: { readyFeed: 0, readyReels: 0, readyCarousels: 0, winnersWaiting: 0, failed: 0 },
+    growth: { recommendations: [], latest: null, followerDelta7d: 0, bestFormat: null },
   });
   const [triggering, setTriggering] = useState({});
   const [message, setMessage] = useState("");
@@ -83,7 +84,7 @@ export default function DashboardClient() {
         <h1>AI Tutor Machine</h1>
         <p>
           Growth engine · Day {data?.tipDay || data?.stats?.tipDay || 1} streak · Daily Reels ·
-          HOW playbook DMs · Insights
+          HOW playbooks · Comment replies · Recycle + recap
         </p>
         {data?.stats && (
           <div className="item-meta" style={{ marginTop: "1rem" }}>
@@ -96,6 +97,63 @@ export default function DashboardClient() {
           </div>
         )}
       </div>
+
+      {data?.growth && (
+        <div className="growth-panel">
+          <div className="growth-grid">
+            <div className="growth-card">
+              <div className="growth-label">Followers</div>
+              <div className="growth-value">
+                {(data.growth.latest?.followers || 0).toLocaleString()}
+              </div>
+              <div className="growth-note">
+                @{data.growth.latest?.username || "unlocking__ai"}
+              </div>
+            </div>
+            <div className="growth-card">
+              <div className="growth-label">7-day change</div>
+              <div
+                className={`growth-value ${
+                  (data.growth.followerDelta7d || 0) >= 0 ? "delta-up" : "delta-down"
+                }`}
+              >
+                {(data.growth.followerDelta7d || 0) > 0 ? "+" : ""}
+                {data.growth.followerDelta7d || 0}
+              </div>
+              <div className="growth-note">
+                {data.growth.latest
+                  ? `${data.growth.latest.reach || 0} reach today`
+                  : "Pull Insights to start tracking"}
+              </div>
+            </div>
+            <div className="growth-card">
+              <div className="growth-label">Best format</div>
+              <div className="growth-value">{data.growth.bestFormat?.type || "—"}</div>
+              <div className="growth-note">
+                {data.growth.bestFormat
+                  ? `avg reach ${data.growth.bestFormat.avgReach}`
+                  : "Need posted insights"}
+              </div>
+            </div>
+            <div className="growth-card">
+              <div className="growth-label">Profile visits</div>
+              <div className="growth-value">
+                {(data.growth.latest?.profileViews || 0).toLocaleString()}
+              </div>
+              <div className="growth-note">
+                {data.growth.latest?.accountsEngaged || 0} accounts engaged
+              </div>
+            </div>
+          </div>
+          {data.growth.recommendations?.length > 0 && (
+            <ul className="reco-list">
+              {data.growth.recommendations.map((rec) => (
+                <li key={rec}>{rec}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {data?.warnings?.length > 0 && (
         <div
@@ -190,7 +248,10 @@ export default function DashboardClient() {
           ["generate-carousel", "Generate Carousel", "#059669"],
           ["post", "Post Feed/Carousel", "#ec4899"],
           ["post-reel", "Post Reel", "#be185d"],
-          ["engage", "DM HOW playbooks", "#0ea5e9"],
+          ["engage", "Engage comments", "#0ea5e9"],
+          ["boost", "Boost Story", "#7c3aed"],
+          ["recycle", "Recycle winner", "#ea580c"],
+          ["recap", "Weekly recap", "#0f766e"],
           ["insights", "Pull Insights", "#f59e0b"],
           ["health", "Health Check", "#64748b"],
         ].map(([name, label, color]) => (
@@ -216,8 +277,6 @@ export default function DashboardClient() {
       <div className="sections">
         <div className="section">
           <div className="section-header">
-            <h2>📋 Ready to Post (3 Daily)</h2>
-            <p>{data?.queue?.length || 0} posts in queue</p>
             <h2>Ready to Post</h2>
             <p>{data?.queue?.length || 0} items in queue</p>
           </div>
@@ -225,7 +284,7 @@ export default function DashboardClient() {
             {!data?.queue || data.queue.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">📭</div>
-                <p>Queue is empty. Run the Generate cron to create 3 posts.</p>
+                <p>Queue is empty. Run Generate, Recycle, or Recap to add posts.</p>
               </div>
             ) : (
               data.queue.map((post) => {
@@ -251,7 +310,7 @@ export default function DashboardClient() {
             )}
           </div>
           <div className="section-footer">
-            Auto-posts daily: 12 PM, 2 PM, 4 PM UTC (3 different hooks, visuals, angles)
+            Auto-posts: feed/carousel 15:00 UTC · Reel 18:00 UTC · boost Story 20:00 UTC
           </div>
         </div>
 
@@ -335,23 +394,9 @@ export default function DashboardClient() {
           <li><code>IG_USER_ID</code> - Configured ✓</li>
         </ul>
         <p>
-          <strong>Three-Vector Automated Schedule (6 posts/day: 3 images + 3 reels):</strong>
-        </p>
-        <ol style={{ marginLeft: "2rem", marginBottom: "1rem" }}>
-          <li><strong>Research</strong> — Mondays 9 AM UTC: Finds high-performing posts with videos (500+ likes)</li>
-          <li><strong>Generate</strong> — Daily 7 AM UTC: Creates 3 captions + pulls video URLs from Apify</li>
-          <li><strong>Image #1</strong> — Daily 12 PM UTC: Posts image with caption</li>
-          <li><strong>Reel #1</strong> — Daily 1 PM UTC: Posts Apify video with same caption</li>
-          <li><strong>Image #2</strong> — Daily 2 PM UTC: Posts image with caption</li>
-          <li><strong>Reel #2</strong> — Daily 3 PM UTC: Posts Apify video with same caption</li>
-          <li><strong>Image #3</strong> — Daily 4 PM UTC: Posts image with caption</li>
-          <li><strong>Reel #3</strong> — Daily 5 PM UTC: Posts Apify video with same caption</li>
-        </ol>
-        <p>
-          <strong>Vector 1 (Volume):</strong> 6 posts per day <strong>Vector 2 (Velocity):</strong> All 6 clustered in 5-hour window (12pm-5pm) <strong>Vector 3 (Signal Density):</strong> 3 unique angles as images + videos for max reach
-        </p>
-        <p>
-          Use the Image and Reel buttons above to test, or Generate to create 3 new variations with Apify videos daily.
+          <strong>Growth schedule (UTC):</strong> research Mon 06:00 · generate 07:00 · Reel 08:00 ·
+          carousel Tue/Thu/Sat 09:00 · recycle Mon 10:00 · recap Sun 10:00 · post 15:00 · Reel post
+          18:00 · engage 19:00/21:00 · boost Story 20:00 · insights 22:00.
         </p>
       </div>
       {data?.failed?.length > 0 && (
@@ -373,15 +418,11 @@ export default function DashboardClient() {
       )}
 
       <div className="setup-section">
-        <h3>Growth engine v2</h3>
+        <h3>Growth engine</h3>
         <p>
-          Daily 16-second Reel at <strong>18:00 UTC</strong>. If Veo fails, a carousel ships the same day.
-          Comment <strong>HOW</strong> playbook DMs go out at 19:00 & 21:00 UTC.
-        </p>
-        <p>
-          Queue fields: Type, Video URL, Cover URL, First Comment, Slide URLs, Story Text,
-          Story Image URL, Day Number, Bonus Prompt, IG Media ID, Reach, Saves, Shares, Plays,
-          Replied Comment IDs, Fallback Used, Last Error. Status options: Ready, Posted, Failed.
+          Daily Reel at <strong>18:00 UTC</strong>. Comment <strong>HOW</strong> playbooks go out at
+          19:00 & 21:00. Every other comment gets a like + short reply. A follow-up Story boosts
+          the same-day post at 20:00. Mondays recycle proven winners; Sundays ship a save-this recap.
         </p>
       </div>
     </div>

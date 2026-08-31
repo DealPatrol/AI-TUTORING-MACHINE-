@@ -97,6 +97,63 @@ button {
   font-size: 0.98rem;
 }
 
+.growth-panel {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.growth-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.growth-card {
+  padding: 1rem 1.1rem;
+  background: #f8f9fd;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.growth-label {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.growth-value {
+  margin: 0.25rem 0 0.15rem;
+  color: var(--foreground);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.7rem;
+  letter-spacing: -0.04em;
+}
+
+.growth-value.delta-up { color: var(--success); }
+.growth-value.delta-down { color: var(--danger); }
+
+.growth-note {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.reco-list {
+  margin: 1rem 0 0 1.15rem;
+  color: var(--foreground);
+}
+
+.reco-list li {
+  margin-bottom: 0.35rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .controls {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -293,6 +350,7 @@ button {
 
 @media (max-width: 900px) {
   .sections { grid-template-columns: 1fr; }
+  .growth-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 640px) {
