@@ -1,4 +1,5 @@
-// ENGAGE — deliver the promised playbook when someone comments HOW.
+// ENGAGE — deliver HOW playbooks, like comments, and reply to the rest.
+// Comment velocity is one of the strongest Instagram ranking signals.
 
 import {
   checkCronAuth,
@@ -6,25 +7,31 @@ import {
   listIgComments,
   replyIgComment,
   sendIgPrivateReply,
+  likeIgComment,
   safeAirtableUpdate,
+  rewriteCopy,
   getIgCredentials,
 } from "@/lib/helpers";
-import { pickBonusPrompt, tipReplyMessage } from "@/lib/growth";
+import {
+  pickBonusPrompt,
+  tipReplyMessage,
+  PLAYBOOK_RE,
+  communityReplyPrompt,
+  pickCommunityReply,
+  looksLikeQuestion,
+} from "@/lib/growth";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
-// Match short keyword replies, not longer comments that happen to contain the word.
-// Keep legacy TIP aliases so older Reels continue delivering their promised bonus.
-const PLAYBOOK_RE = /^\s*(how|tip|tips|prompt|send\s*it|bonus|playbook)\s*[.!?]?\s*$/i;
+const MAX_COMMUNITY_REPLIES = 12;
+const MAX_CUSTOM_REPLIES = 5;
+const MAX_LIKES = 25;
 
 export async function GET(request) {
   if (!checkCronAuth(request)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { token } = getIgCredentials();
-  if (!token) {
-    return Response.json({ error: "IG_ACCESS_TOKEN missing" }, { status: 400 });
   const { token, igUserId } = getIgCredentials();
   if (!token || !igUserId) {
     return Response.json({ error: "IG_ACCESS_TOKEN or IG_USER_ID missing" }, { status: 400 });
@@ -46,7 +53,6 @@ export async function GET(request) {
     } catch (err) {
       const msg = String(err.message || "");
       if (msg.includes("UNKNOWN_FIELD_NAME") || msg.includes("Unknown field") || msg.includes("INVALID_SORT")) {
-        // Retry without sort if Posted At sort fails
         try {
           posted = await airtableList(
             "Queue",
@@ -72,7 +78,6 @@ export async function GET(request) {
       }
     }
 
-    // Prefer newest by Posted At when sort wasn't available
     posted.sort((a, b) => {
       const ta = Date.parse(a.fields["Posted At"] || 0) || 0;
       const tb = Date.parse(b.fields["Posted At"] || 0) || 0;
@@ -80,6 +85,9 @@ export async function GET(request) {
     });
 
     let replied = 0;
+    let communityReplies = 0;
+    let liked = 0;
+    let customReplies = 0;
     const details = [];
 
     for (const row of posted) {
@@ -102,38 +110,74 @@ export async function GET(request) {
       for (const c of comments) {
         if (!c?.id || alreadySet.has(c.id)) continue;
         if (ownUsername && String(c.username || "").toLowerCase() === ownUsername) continue;
-        if (!PLAYBOOK_RE.test(c.text || "")) continue;
-        try {
-          // The playbook itself stays private so every viewer must leave their
-          // own HOW comment. A generic public confirmation contains no value
-          // someone else can reuse.
-          const privateReply = await sendIgPrivateReply({
-            igUserId,
-            commentId: c.id,
-            message,
-            token,
-          });
+
+        if (liked < MAX_LIKES) {
+          const likedComment = await likeIgComment(c.id, token);
+          if (likedComment) liked += 1;
+        }
+
+        if (PLAYBOOK_RE.test(c.text || "")) {
           try {
-            await replyIgComment(
-              c.id,
-              "Sent privately ✅ Check your Instagram inbox or Message Requests.",
-              token
-            );
-          } catch (confirmationErr) {
-            // The DM already succeeded; don't retry and risk a duplicate just
-            // because the optional public confirmation failed.
-            console.warn("Public DM confirmation failed:", confirmationErr.message);
+            const privateReply = await sendIgPrivateReply({
+              igUserId,
+              commentId: c.id,
+              message,
+              token,
+            });
+            try {
+              await replyIgComment(
+                c.id,
+                "Sent privately ✅ Check your Instagram inbox or Message Requests.",
+                token
+              );
+            } catch (confirmationErr) {
+              console.warn("Public DM confirmation failed:", confirmationErr.message);
+            }
+            alreadySet.add(c.id);
+            replied += 1;
+            details.push({
+              mediaId,
+              commentId: c.id,
+              username: c.username,
+              kind: "playbook",
+              privateMessageId: privateReply.message_id,
+            });
+          } catch (err) {
+            console.warn("Private playbook delivery failed:", err.message);
           }
+          continue;
+        }
+
+        if (communityReplies >= MAX_COMMUNITY_REPLIES) continue;
+
+        let replyText = pickCommunityReply();
+        const wantsCustom =
+          customReplies < MAX_CUSTOM_REPLIES &&
+          (looksLikeQuestion(c.text) || String(c.text || "").trim().length > 24);
+        if (wantsCustom) {
+          try {
+            const drafted = await rewriteCopy(
+              communityReplyPrompt(c.text, row.fields.Hook, row.fields["Day Number"])
+            );
+            replyText = pickCommunityReply(drafted);
+            customReplies += 1;
+          } catch (err) {
+            console.warn("Community reply draft failed:", err.message);
+          }
+        }
+
+        try {
+          await replyIgComment(c.id, replyText, token);
           alreadySet.add(c.id);
-          replied += 1;
+          communityReplies += 1;
           details.push({
             mediaId,
             commentId: c.id,
             username: c.username,
-            privateMessageId: privateReply.message_id,
+            kind: "community",
           });
         } catch (err) {
-          console.warn("Private playbook delivery failed:", err.message);
+          console.warn("Community reply failed:", err.message);
         }
       }
 
@@ -142,7 +186,13 @@ export async function GET(request) {
       });
     }
 
-    return Response.json({ ok: true, replied, details });
+    return Response.json({
+      ok: true,
+      replied,
+      communityReplies,
+      liked,
+      details,
+    });
   } catch (err) {
     console.error("Engage cron error:", err);
     return Response.json({ error: err.message }, { status: 500 });

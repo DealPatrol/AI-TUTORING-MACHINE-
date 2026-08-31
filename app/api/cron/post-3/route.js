@@ -35,8 +35,6 @@ export async function GET(request) {
     }
 
     const { token, igUserId } = getIgCredentials();
-    const token = process.env.IG_ACCESS_TOKEN;
-    const igUserId = process.env.IG_USER_ID;
     if (!token || !igUserId) {
       throw new Error("IG_ACCESS_TOKEN or IG_USER_ID missing");
     }

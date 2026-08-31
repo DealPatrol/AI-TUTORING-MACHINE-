@@ -61,9 +61,6 @@ export async function GET(request) {
 
     const retryCount = post.fields["Retry Count"] || 0;
     const { token, igUserId } = getIgCredentials();
-
-    const retryCount = post.fields["Retry Count"] || 0;
-    const { token, igUserId } = getIgCredentials();
     if (!token || !igUserId) {
       throw new Error("IG_ACCESS_TOKEN or IG_USER_ID missing");
     }

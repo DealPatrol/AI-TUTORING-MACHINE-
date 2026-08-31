@@ -43,6 +43,10 @@ Fields:
 | **Replied Comment IDs** | Long text | JSON array — avoids duplicate HOW playbook replies |
 | **Fallback Used** | Checkbox | True when Veo failed and carousel shipped instead |
 | **Last Error** | Long text | Failure reason |
+| **Boosted At** | Single line text | Optional — set when the follow-up Story ships |
+| **Likes / Comments** | Number | Optional — filled by insights |
+
+Follower totals are stored in Vercel Blob (`growth/history.json`), not Airtable.
 
 ### Quick add (growth fields)
 
@@ -61,9 +65,12 @@ Also add **Processing** to Winners Status (used to claim a winner before long ge
 5. **Post-1** (daily 12:00 UTC) → publishes next Ready image  
 6. **Post** (daily 15:00 UTC) → publishes Feed/Carousel + first comment + Story  
 7. **Post reel** (daily 18:00 UTC) → publishes Reel (or Carousel/Feed fallback) + Story  
-8. **Health** (daily 11:00 UTC) → warns if winners/queue fuel is low  
-
-Optional: Engage / Insights / generate-carousel can be re-enabled in `vercel.json` after adding those Airtable fields.
+8. **Engage** (19:00 & 21:00 UTC) → HOW playbook DMs + likes + replies on other comments  
+9. **Boost** (20:00 UTC) → same-day follow-up Story  
+10. **Insights** (22:00 UTC) → media metrics + follower snapshot  
+11. **Recycle** (Mon 10:00) → queues a fresh take on a proven post  
+12. **Recap** (Sun 10:00) → weekly save-magnet carousel  
+13. **Health** (daily 11:00 UTC) → warns if winners/queue fuel is low
 
 ## Private HOW playbook DMs
 

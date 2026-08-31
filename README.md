@@ -70,9 +70,13 @@ curl -H "Authorization: Bearer YOUR_CRON_SECRET" https://your-app.vercel.app/api
 | **Day N tip streak** | Habit + follow reason (“Day 47”) | Every piece of content |
 | **TIP comment replies** | Makes engagement CTA real → more comments | 19:00 & 21:00 UTC |
 | **Stories after each post** | Extra profile visits same day | Auto after feed + reel publish |
-| **Insights** | See which formats grow reach | Daily 22:00 UTC |
+| **Insights + follower tracker** | See which formats grow reach and week-over-week follows | Daily 22:00 UTC |
+| **Comment replies + likes** | Algorithm rewards comment velocity; HOW still gets a private playbook | 19:00 & 21:00 UTC |
+| **Boost Story** | Same-day Story that sends people back to comment HOW / follow | Daily 20:00 UTC |
+| **Recycle winners** | Fresh hook on posts that already grew reach | Mondays 10:00 UTC |
+| **Weekly recap** | Save-magnet “this week’s tips” carousel | Sundays 10:00 UTC |
 | **Carousels** | Highest save rate → more reach | Tue / Thu / Sat |
-| **Pipeline health** | Catch empty queues before post time | Daily 12:00 UTC |
+| **Pipeline health** | Catch empty queues before post time | Daily 11:00 UTC |
 
 Tune voice/prompts in `lib/growth.js`.
 
@@ -88,11 +92,14 @@ Optional env: `VEO_MODEL` (default `veo-3.1-fast-generate-preview`).
 | `/api/cron/generate` | Daily 07:00 |
 | `/api/cron/generate-reel` | Daily 08:00 |
 | `/api/cron/generate-carousel` | Tue/Thu/Sat 09:00 |
+| `/api/cron/recycle` | Mon 10:00 |
+| `/api/cron/recap` | Sun 10:00 |
+| `/api/cron/health` | Daily 11:00 |
 | `/api/cron/post` | Daily 15:00 |
 | `/api/cron/post-reel` | Daily 18:00 |
 | `/api/cron/engage` | Daily 19:00 & 21:00 |
+| `/api/cron/boost` | Daily 20:00 |
 | `/api/cron/insights` | Daily 22:00 |
-| `/api/cron/health` | Daily 12:00 |
 
 ---
 
