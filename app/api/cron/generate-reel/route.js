@@ -5,9 +5,8 @@ import { put } from "@vercel/blob";
 import {
   checkCronAuth,
   airtableCreateQueue,
-  rewriteCopy,
-  parseClaudeJson,
-  generateGeminiImage,
+  rewriteJson,
+  generateGeminiImageWithFallback,
   generateVeoReelWithFallback,
   stitchVideoBuffers,
   getTipDayNumber,
@@ -16,7 +15,14 @@ import {
   releaseWinner,
   tryRefillWinners,
 } from "@/lib/helpers";
-import { reelGrowthPrompt, buildFirstComment, storyOverlayPrompt, pickEvergreenTopic } from "@/lib/growth";
+import {
+  reelGrowthPrompt,
+  buildEmergencyGrowthContent,
+  buildFirstComment,
+  storyOverlayPrompt,
+  pickEvergreenTopic,
+} from "@/lib/growth";
+import { recordPipelineStatus } from "@/lib/pipeline-status";
 
 // 300s is the safe serverless ceiling. Veo generation is internally capped by
 // an overall time budget (see generateVeoReelWithFallback) so all model
@@ -47,11 +53,21 @@ export async function GET(request) {
       console.warn(`[v0] No winners available — generating evergreen Reel: "${sourceCaption}"`);
     }
 
-    const raw = await rewriteCopy(reelGrowthPrompt(sourceCaption, dayNumber));
-    const content = parseClaudeJson(raw);
+    let content;
+    let copyError = null;
+    try {
+      content = await rewriteJson(reelGrowthPrompt(sourceCaption, dayNumber), {
+        requiredKeys: ["hook", "caption", "beats", "voiceoverSegments"],
+      });
+    } catch (error) {
+      copyError = `copy: ${error.message}`;
+      console.error("AI copy unavailable — using emergency Reel copy:", error.message);
+      content = buildEmergencyGrowthContent("reel");
+    }
     const stamp = Date.now();
+    const fallbackErrors = copyError ? [copyError] : [];
 
-    const cover = await generateGeminiImage(
+    const cover = await generateGeminiImageWithFallback(
       `Create a vertical Instagram Reel cover, 9:16 portrait.
 Style: original flat graphic design, huge bold sans-serif headline, black and
 white with one warm red accent, strong hierarchy, generous spacing, high
@@ -59,16 +75,20 @@ contrast, readable on mobile in one second. No photo, celebrity or influencer
 likeness, trademarked logo, brand mashup, or copied social account styling.
 Big headline text (render exactly): "${content.coverText || content.hook}"
 Tiny label at top: "Day ${dayNumber}"
-Tiny label at bottom: "Copy it · save it · use it"`
+Tiny label at bottom: "Copy it · save it · use it"`,
+      { width: 1080, height: 1350 }
     );
+    if (cover.error) fallbackErrors.push(`cover: ${cover.error}`);
     const coverBlob = await put(`reels/cover-${stamp}.png`, cover.buffer, {
       access: "public",
       contentType: "image/png",
     });
 
-    const story = await generateGeminiImage(
-      storyOverlayPrompt(content.hook, content.storyText || content.coverText, dayNumber)
+    const story = await generateGeminiImageWithFallback(
+      storyOverlayPrompt(content.hook, content.storyText || content.coverText, dayNumber),
+      { width: 1080, height: 1920 }
     );
+    if (story.error) fallbackErrors.push(`story: ${story.error}`);
     const storyBlob = await put(`stories/reel-${stamp}.png`, story.buffer, {
       access: "public",
       contentType: "image/png",
@@ -194,7 +214,7 @@ Subtle upbeat music and realistic ambient sound. ${ending}`;
       ].slice(0, 6);
       const slideUrls = [coverBlob.url];
       for (let i = 0; i < beats.length; i++) {
-        const { buffer } = await generateGeminiImage(
+        const image = await generateGeminiImageWithFallback(
           `Create a clean Instagram carousel slide, square 1:1.
 Style: original flat graphic design, huge bold sans-serif type, black and white
 with one warm red accent, strong hierarchy, high contrast, and generous spacing.
@@ -203,7 +223,8 @@ brand mashups, or copied social account styling.
 Tiny metadata label: "Day ${dayNumber}". Slide ${i + 1}.
 Headline (render exactly): "${String(beats[i]).slice(0, 80)}"`
         );
-        const blob = await put(`reels/fallback-${stamp}-${i + 1}.png`, buffer, {
+        if (image.error) fallbackErrors.push(`fallback slide ${i + 1}: ${image.error}`);
+        const blob = await put(`reels/fallback-${stamp}-${i + 1}.png`, image.buffer, {
           access: "public",
           contentType: "image/png",
         });
@@ -225,10 +246,15 @@ Headline (render exactly): "${String(beats[i]).slice(0, 80)}"`
         "Day Number": dayNumber,
         "Bonus Prompt": content.bonusPrompt || "",
         "Fallback Used": true,
-        "Last Error": `Veo failed: ${veoErr.message}`.slice(0, 1000),
+        "Last Error": [`Veo failed: ${veoErr.message}`, ...fallbackErrors].join(" | ").slice(0, 1000),
       });
       if (winner && !winner._claimedAsUsed) await markWinnerUsed(winner.id);
 
+      await recordPipelineStatus("generate-reel", {
+        outcome: "queued-fallback",
+        error: veoErr.message,
+        details: { hook: content.hook, type: "Carousel", fallbackUsed: true },
+      });
       return Response.json({
         ok: true,
         queued: content.hook,
@@ -253,10 +279,20 @@ Headline (render exactly): "${String(beats[i]).slice(0, 80)}"`
       "Source URL": winner?.fields?.["Post URL"] || "",
       "Day Number": dayNumber,
       "Bonus Prompt": content.bonusPrompt || "",
-      "Fallback Used": false,
+      "Fallback Used": fallbackErrors.length > 0,
+      "Last Error": fallbackErrors.join(" | ").slice(0, 1000) || undefined,
     });
     if (winner && !winner._claimedAsUsed) await markWinnerUsed(winner.id);
 
+    await recordPipelineStatus("generate-reel", {
+      outcome: "queued",
+      details: {
+        hook: content.hook,
+        type: "Reel",
+        fallbackUsed: fallbackErrors.length > 0,
+        veoModel,
+      },
+    });
     return Response.json({
       ok: true,
       queued: content.hook,
@@ -269,6 +305,7 @@ Headline (render exactly): "${String(beats[i]).slice(0, 80)}"`
   } catch (err) {
     if (winner?.id) await releaseWinner(winner.id);
     console.error("Generate reel cron error:", err);
+    await recordPipelineStatus("generate-reel", { outcome: "failed", error: err.message });
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

@@ -112,7 +112,11 @@ export async function GET(request) {
         if (ownUsername && String(c.username || "").toLowerCase() === ownUsername) continue;
 
         if (liked < MAX_LIKES) {
-          const likedComment = await likeIgComment(c.id, token);
+          const likedComment = await likeIgComment({
+            igUserId,
+            commentId: c.id,
+            token,
+          });
           if (likedComment) liked += 1;
         }
 

@@ -19,6 +19,7 @@ import {
   cleanQueueCaption,
   getIgCredentials,
 } from "@/lib/helpers";
+import { recordPipelineStatus } from "@/lib/pipeline-status";
 
 // Carousels build several child containers, so allow the full safe ceiling.
 export const maxDuration = 300;
@@ -43,6 +44,10 @@ export async function GET(request) {
       type = "Feed";
     }
     if (queue.length === 0) {
+      await recordPipelineStatus("post-reel", {
+        outcome: "skipped",
+        error: "No Ready reel, carousel, or feed items",
+      });
       return Response.json({
         ok: true,
         skipped: true,
@@ -140,6 +145,10 @@ export async function GET(request) {
       "IG Media ID": published.id,
     });
 
+    await recordPipelineStatus("post-reel", {
+      outcome: "posted",
+      details: { hook: post.fields.Hook, type, igMediaId: published.id },
+    });
     return Response.json({
       ok: true,
       posted: post.fields.Hook,
@@ -153,6 +162,7 @@ export async function GET(request) {
     if (post?.id) {
       await markQueueFailed(post.id, err.message, { retryCount: post.fields["Retry Count"] || 0 });
     }
+    await recordPipelineStatus("post-reel", { outcome: "failed", error: err.message });
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

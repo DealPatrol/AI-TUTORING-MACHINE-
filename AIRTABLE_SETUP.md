@@ -83,6 +83,8 @@ Required Meta permissions:
 
 - Instagram Login token: `instagram_business_basic`, `instagram_business_manage_comments`
 - Facebook Login/Page token: `instagram_basic`, `instagram_manage_comments`, `pages_read_engagement`
+- Optional comment likes: `instagram_manage_engagement` (replies and HOW
+  delivery continue if this permission is unavailable)
 
 If private delivery fails, the playbook is **not** exposed publicly and the
 comment remains eligible for a later retry.
