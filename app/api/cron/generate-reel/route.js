@@ -57,7 +57,7 @@ Style: soft cream background, bold dark charcoal sans-serif headline,
 small friendly robot mascot, flat modern design, no photo, high contrast.
 Big headline text (render exactly): "${content.coverText || content.hook}"
 Tiny label at top: "Day ${dayNumber}"
-Tiny label at bottom: "Follow for daily AI tips"`
+Tiny label at bottom: "Copy it · save it · use it"`
     );
     const coverBlob = await put(`reels/cover-${stamp}.png`, cover.buffer, {
       access: "public",
@@ -156,7 +156,7 @@ Subtle upbeat music and realistic ambient sound. ${ending}`;
     const firstComment =
       content.firstComment ||
       buildFirstComment({
-        cta: `Day ${dayNumber} — Comment HOW and I'll DM you the AI playbook.`,
+        cta: "Comment HOW and I'll DM you the expanded prompt with a filled-in example.",
       });
 
     let videoUrl = null;
@@ -204,7 +204,7 @@ Headline (render exactly): "${String(beats[i]).slice(0, 80)}"`
       }
 
       await airtableCreateQueue({
-        Hook: `Day ${dayNumber}: ${content.hook}`,
+        Hook: content.hook,
         Caption: content.caption,
         "Image URL": slideUrls[0],
         "Slide URLs": JSON.stringify(slideUrls),
@@ -233,7 +233,7 @@ Headline (render exactly): "${String(beats[i]).slice(0, 80)}"`
     }
 
     await airtableCreateQueue({
-      Hook: `Day ${dayNumber}: ${content.hook}`,
+      Hook: content.hook,
       Caption: content.caption,
       "Image URL": coverBlob.url,
       "Cover URL": coverBlob.url,

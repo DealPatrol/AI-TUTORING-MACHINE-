@@ -139,7 +139,7 @@ One complete energetic teacher voiceover sentence of no more than 15 words, subt
     }
 
     await airtableCreateQueue({
-      Hook: `Day ${dayNumber}: ${content.hook}`,
+      Hook: content.hook,
       Caption: content.caption,
       "Image URL": blob.url,
       Status: "Ready",

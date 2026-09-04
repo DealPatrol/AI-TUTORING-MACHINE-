@@ -47,11 +47,11 @@ export async function GET(request) {
         `Create a clean Instagram carousel slide, square 1:1.
 Style: soft cream background, bold dark charcoal sans-serif,
 small friendly robot mascot accent, generous whitespace, flat design.
-Day ${dayNumber}. Slide ${i + 1} of ${slides.length}.
+Tiny metadata label: "Day ${dayNumber}". Slide ${i + 1} of ${slides.length}.
 Headline (render exactly): "${slide.headline || ""}"
 Body text (render exactly): "${slide.body || ""}"
 ${i === 0 ? 'Top-left small label: "SWIPE →"' : ""}
-${i === slides.length - 1 ? 'Bottom label: "Follow for daily AI tips"' : ""}`
+${i === slides.length - 1 ? 'Bottom label: "Save this prompt · Comment HOW"' : ""}`
       );
       const blob = await put(`carousels/${stamp}-${i + 1}.png`, buffer, {
         access: "public",
@@ -71,11 +71,11 @@ ${i === slides.length - 1 ? 'Bottom label: "Follow for daily AI tips"' : ""}`
     const firstComment =
       content.firstComment ||
       buildFirstComment({
-        cta: `Day ${dayNumber} — Save this, then follow for tomorrow's tip.`,
+        cta: "Save this prompt. Comment HOW for the reusable template and filled-in example.",
       });
 
     await airtableCreateQueue({
-      Hook: `Day ${dayNumber}: ${content.hook}`,
+      Hook: content.hook,
       Caption: content.caption,
       "Image URL": slideUrls[0],
       "Slide URLs": JSON.stringify(slideUrls),

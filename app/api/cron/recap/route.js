@@ -44,11 +44,11 @@ export async function GET(request) {
         `Create a clean Instagram carousel slide, square 1:1.
 Style: soft cream background, bold dark charcoal sans-serif,
 small friendly robot mascot accent, generous whitespace, flat design.
-Day ${dayNumber}. Slide ${i + 1} of ${slides.length}.
+Tiny metadata label: "Day ${dayNumber}". Slide ${i + 1} of ${slides.length}.
 Headline (render exactly): "${slide.headline || ""}"
 Body text (render exactly): "${slide.body || ""}"
 ${i === 0 ? 'Top-left small label: "SWIPE →"' : ""}
-${i === slides.length - 1 ? 'Bottom label: "Follow for daily AI tips"' : ""}`
+${i === slides.length - 1 ? 'Bottom label: "Save these prompts · Comment HOW"' : ""}`
       );
       const blob = await put(`carousels/recap-${stamp}-${i + 1}.png`, buffer, {
         access: "public",
@@ -66,7 +66,7 @@ ${i === slides.length - 1 ? 'Bottom label: "Follow for daily AI tips"' : ""}`
     });
 
     await airtableCreateQueue({
-      Hook: `Day ${dayNumber}: ${content.hook}`,
+      Hook: content.hook,
       Caption: content.caption,
       "Image URL": slideUrls[0],
       "Slide URLs": JSON.stringify(slideUrls),
@@ -75,7 +75,7 @@ ${i === slides.length - 1 ? 'Bottom label: "Follow for daily AI tips"' : ""}`
       "First Comment":
         content.firstComment ||
         buildFirstComment({
-          cta: `Day ${dayNumber} — Save this week's AI tips, then follow for tomorrow.`,
+          cta: "Save this prompt pack. Comment HOW for the reusable templates.",
         }),
       "Story Text": content.storyText || content.hook,
       "Story Image URL": storyBlob.url,

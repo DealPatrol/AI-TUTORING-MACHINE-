@@ -6,7 +6,19 @@ import {
   recentPostedHooks,
   utcDateString,
 } from "../lib/growth-math.js";
-import { PLAYBOOK_RE, pickCommunityReply, looksLikeQuestion } from "../lib/growth.js";
+import {
+  BONUS_PROMPT_FALLBACKS,
+  EVERGREEN_TOPICS,
+  PLAYBOOK_RE,
+  buildFirstComment,
+  carouselGrowthPrompt,
+  feedGrowthPrompt,
+  looksLikeQuestion,
+  pickBonusPrompt,
+  pickCommunityReply,
+  reelGrowthPrompt,
+  storyOverlayPrompt,
+} from "../lib/growth.js";
 
 function daysAgo(days, extra = {}) {
   return {
@@ -77,5 +89,43 @@ assert.ok(looksLikeQuestion("How do I write better prompts?"));
 assert.ok(!looksLikeQuestion("love this"));
 assert.equal(pickCommunityReply("  Short useful reply here  "), "Short useful reply here");
 assert.ok(pickCommunityReply("").length > 0);
+
+const reelPrompt = reelGrowthPrompt("Turn one note into useful social hooks", 47);
+assert.match(reelPrompt, /specific result or unexpected instruction immediately/);
+assert.match(reelPrompt, /Paste your[\s\S]*Then type/);
+assert.match(reelPrompt, /Day 47[\s\S]*tiny cover metadata/);
+assert.match(reelPrompt, /Never put it in the hook, cover headline, beats, voiceover, or CTA/);
+assert.match(reelPrompt, /"bonusPrompt"/);
+assert.match(reelPrompt, /filled-in example/);
+assert.doesNotMatch(reelPrompt, /Put "Day 47" on the cover/);
+
+const feedPrompt = feedGrowthPrompt("Write a better email", 47);
+assert.match(feedPrompt, /exact copyable prompt/);
+assert.match(feedPrompt, /never start with Day/);
+assert.match(feedPrompt, /"firstComment"/);
+
+const carouselPrompt = carouselGrowthPrompt("Answer from these notes", 47);
+assert.match(carouselPrompt, /copy-paste prompt in readable chunks/);
+assert.match(carouselPrompt, /Save this prompt/);
+assert.match(carouselPrompt, /"slides"/);
+
+const firstComment = buildFirstComment({
+  topicTag: "#aitools",
+  cta: "Comment HOW for the notes-only template.",
+});
+assert.match(firstComment, /^Comment HOW for the notes-only template\./);
+assert.match(firstComment, /#aitools/);
+assert.equal((firstComment.match(/#[a-z0-9]+/gi) || []).length, 8);
+
+assert.ok(EVERGREEN_TOPICS.some((topic) => topic.includes("interview you")));
+assert.ok(EVERGREEN_TOPICS.some((topic) => topic.includes("only from pasted notes")));
+assert.ok(BONUS_PROMPT_FALLBACKS.every((prompt) => prompt.includes("Paste")));
+assert.ok(BONUS_PROMPT_FALLBACKS.every((prompt) => prompt.includes("Check:")));
+assert.equal(pickBonusPrompt("  A specific reusable prompt that is long enough.  "), "A specific reusable prompt that is long enough.");
+
+const storyPrompt = storyOverlayPrompt("A useful hook", "Use only your notes", 47);
+assert.match(storyPrompt, /Open the post · Comment HOW/);
+assert.match(storyPrompt, /Tiny top label: "Day 47"/);
+assert.doesNotMatch(storyPrompt, /Follow for 1 tip a day/);
 
 console.log("growth-stats tests passed");

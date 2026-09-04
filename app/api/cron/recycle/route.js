@@ -79,7 +79,7 @@ Tiny label: "Day ${dayNumber}"`
 
     const sourceUrl = `recycle:${candidate.id}`;
     await airtableCreateQueue({
-      Hook: `Day ${dayNumber}: ${content.hook}`,
+      Hook: content.hook,
       Caption: content.caption,
       "Image URL": blob.url,
       Status: "Ready",
