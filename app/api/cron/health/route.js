@@ -126,10 +126,6 @@ export async function GET(request) {
     if (stats.readyFeed + stats.readyCarousels === 0) {
       warnings.push("No Ready feed/carousel for 15:00 UTC post");
     }
-    if (stats.readyFeed + stats.readyReels + stats.readyCarousels === 0) {
-      const age = stats.hoursSinceLastPost == null ? "last successful post unknown" : `last post ${stats.hoursSinceLastPost}h ago`;
-      warnings.push(`Ready queue is empty (${age})`);
-    }
     if (stats.readyFallbacks > 0) {
       warnings.push(`${stats.readyFallbacks} Ready item(s) used a generation fallback`);
     }

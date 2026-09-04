@@ -76,7 +76,7 @@ likeness, trademarked logo, brand mashup, or copied social account styling.
 Big headline text (render exactly): "${content.coverText || content.hook}"
 Tiny label at top: "Day ${dayNumber}"
 Tiny label at bottom: "Copy it · save it · use it"`,
-      { width: 1080, height: 1350 }
+      { width: 1080, height: 1920 }
     );
     if (cover.error) fallbackErrors.push(`cover: ${cover.error}`);
     const coverBlob = await put(`reels/cover-${stamp}.png`, cover.buffer, {
@@ -210,8 +210,9 @@ Subtle upbeat music and realistic ambient sound. ${ending}`;
       const beats = [
         content.hook,
         ...(Array.isArray(content.beats) ? content.beats : []),
+        "Comment HOW for the AI playbook",
       ].slice(0, 6);
-      const slideUrls = [coverBlob.url];
+      const slideUrls = [];
       for (let i = 0; i < beats.length; i++) {
         const image = await generateGeminiImageWithFallback(
           `Create a clean Instagram carousel slide, square 1:1.
@@ -251,8 +252,12 @@ Headline (render exactly): "${String(beats[i]).slice(0, 80)}"`
 
       await recordPipelineStatus("generate-reel", {
         outcome: "queued-fallback",
-        error: veoErr.message,
-        details: { hook: content.hook, type: "Carousel", fallbackUsed: true },
+        details: {
+          hook: content.hook,
+          type: "Carousel",
+          fallbackUsed: true,
+          reason: veoErr.message,
+        },
       });
       return Response.json({
         ok: true,

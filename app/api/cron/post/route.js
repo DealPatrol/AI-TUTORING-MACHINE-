@@ -36,7 +36,6 @@ export async function GET(request) {
     if (queue.length === 0) {
       await recordPipelineStatus("post", {
         outcome: "skipped",
-        error: "No Ready feed or carousel items",
       });
       return Response.json({
         ok: true,

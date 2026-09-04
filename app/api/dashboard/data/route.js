@@ -43,20 +43,10 @@ export async function GET() {
       type: r.fields.Type || "Feed",
       error: r.fields["Last Error"] || "Provider fallback used",
     }));
-  const postedTimes = posted
-    .map((r) => Date.parse(r.fields["Posted At"] || ""))
-    .filter(Number.isFinite);
-  const latestPostedTime = postedTimes.length ? Math.max(...postedTimes) : null;
-  const hoursSinceLastPost =
-    latestPostedTime == null ? null : Math.floor((Date.now() - latestPostedTime) / 3600000);
 
   if (winners.length < 3) warnings.push(`Low winners (${winners.length}) — run research`);
   if (readyReels === 0) warnings.push("No Ready Reel for today's 18:00 UTC post");
   if (readyFeed + readyCarousels === 0) warnings.push("No Ready feed/carousel for 15:00 UTC");
-  if (queue.length === 0) {
-    const age = hoursSinceLastPost == null ? "last successful post unknown" : `last post ${hoursSinceLastPost}h ago`;
-    warnings.push(`Ready queue is empty (${age})`);
-  }
   if (generationIssues.length) warnings.push(`${generationIssues.length} Ready item(s) used a generation fallback`);
   if (failed.length) warnings.push(`${failed.length} failed queue item(s)`);
 
