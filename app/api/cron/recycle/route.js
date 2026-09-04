@@ -5,14 +5,18 @@ import { put } from "@vercel/blob";
 import {
   checkCronAuth,
   airtableCreateQueue,
-  generateGeminiImage,
+  generateGeminiImageWithFallback,
   getTipDayNumber,
-  parseClaudeJson,
-  rewriteCopy,
+  rewriteJson,
   listPostedQueue,
   airtableList,
 } from "@/lib/helpers";
-import { recycleGrowthPrompt, buildFirstComment, storyOverlayPrompt } from "@/lib/growth";
+import {
+  recycleGrowthPrompt,
+  buildEmergencyGrowthContent,
+  buildFirstComment,
+  storyOverlayPrompt,
+} from "@/lib/growth";
 import { pickRecycleCandidate } from "@/lib/growth-stats";
 
 export const maxDuration = 180;
@@ -51,12 +55,21 @@ export async function GET(request) {
 
     const dayNumber = await getTipDayNumber();
     const source = (candidate.fields.Caption || candidate.fields.Hook || "").slice(0, 1500);
-    const content = parseClaudeJson(
-      await rewriteCopy(recycleGrowthPrompt(source, candidate.fields.Hook, dayNumber))
-    );
+    let content;
+    let copyError = null;
+    try {
+      content = await rewriteJson(
+        recycleGrowthPrompt(source, candidate.fields.Hook, dayNumber),
+        { requiredKeys: ["hook", "caption"] }
+      );
+    } catch (error) {
+      copyError = `copy: ${error.message}`;
+      console.error("AI copy unavailable — using emergency recycle copy:", error.message);
+      content = buildEmergencyGrowthContent("feed");
+    }
 
     const stamp = Date.now();
-    const image = await generateGeminiImage(
+    const image = await generateGeminiImageWithFallback(
       `Create a clean modern Instagram graphic, square 1:1.
 Soft cream background, bold dark charcoal headline, small friendly robot mascot,
 flat design, generous whitespace.
@@ -69,8 +82,9 @@ Tiny label: "Day ${dayNumber}"`
       contentType: "image/png",
     });
 
-    const story = await generateGeminiImage(
-      storyOverlayPrompt(content.hook, content.storyText, dayNumber)
+    const story = await generateGeminiImageWithFallback(
+      storyOverlayPrompt(content.hook, content.storyText, dayNumber),
+      { width: 1080, height: 1920 }
     );
     const storyBlob = await put(`stories/recycle-${stamp}.png`, story.buffer, {
       access: "public",
@@ -79,7 +93,7 @@ Tiny label: "Day ${dayNumber}"`
 
     const sourceUrl = `recycle:${candidate.id}`;
     await airtableCreateQueue({
-      Hook: `Day ${dayNumber}: ${content.hook}`,
+      Hook: content.hook,
       Caption: content.caption,
       "Image URL": blob.url,
       Status: "Ready",
@@ -90,6 +104,10 @@ Tiny label: "Day ${dayNumber}"`
       "Source URL": sourceUrl,
       "Day Number": dayNumber,
       "Bonus Prompt": content.bonusPrompt || "",
+      "Fallback Used": Boolean(copyError || image.fallback || story.fallback),
+      "Last Error":
+        [copyError, image.error, story.error].filter(Boolean).join(" | ").slice(0, 1000) ||
+        undefined,
     });
 
     return Response.json({

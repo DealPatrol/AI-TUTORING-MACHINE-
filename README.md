@@ -67,7 +67,7 @@ curl -H "Authorization: Bearer YOUR_CRON_SECRET" https://your-app.vercel.app/api
 |--------|----------------|----------|
 | **Daily Reels** | Reels get the widest non-follower reach | Generate 8:00 UTC · Post **18:00 UTC daily** |
 | **Veo fallback** | Never skip a day if video gen fails | Auto → carousel same day |
-| **Day N tip streak** | Habit + follow reason (“Day 47”) | Every piece of content |
+| **Optional Day N label** | Keeps continuity without weakening the main hook | Tiny metadata only |
 | **TIP comment replies** | Makes engagement CTA real → more comments | 19:00 & 21:00 UTC |
 | **Stories after each post** | Extra profile visits same day | Auto after feed + reel publish |
 | **Insights + follower tracker** | See which formats grow reach and week-over-week follows | Daily 22:00 UTC |
@@ -81,6 +81,28 @@ curl -H "Authorization: Bearer YOUR_CRON_SECRET" https://your-app.vercel.app/api
 Tune voice/prompts in `lib/growth.js`.
 
 Optional env: `VEO_MODEL` (default `veo-3.1-fast-generate-preview`).
+Current model fallbacks are `gemini-3.5-flash-lite` → `gemini-2.5-flash` →
+`gemini-2.5-flash-lite` for text, `gemini-3.1-flash-image` →
+`gemini-2.5-flash-image` for images, and Veo 3.1 fast → standard for video.
+
+If all text providers are temporarily unavailable, the daily generators queue
+a schema-compatible notes-only prompt. If all image models are rate-limited,
+they upload a provider-independent PNG and preserve the full lesson in the
+caption. Ready fallback posts display their provider error on the dashboard.
+
+### Restore posting after a provider outage
+
+After deploying a fix:
+
+1. Open the dashboard and run **Health Check**. Confirm the Instagram token is
+   valid and review the latest generation/publishing error.
+2. Click **Trigger Generate** and wait for a new item under **Ready to Post**.
+   Use **Generate Reel** when you specifically want the Reel/Veo path.
+3. Review the queued caption and fallback warning, if present.
+4. Click **Post Reel**. That route publishes a Reel first, then safely falls
+   back to a Ready carousel or feed item.
+5. Refresh the dashboard and confirm the item moved to **Posted** with an IG
+   media ID before triggering another post.
 
 ---
 

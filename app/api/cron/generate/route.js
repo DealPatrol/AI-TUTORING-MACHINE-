@@ -6,16 +6,23 @@ import { put } from "@vercel/blob";
 import {
   checkCronAuth,
   airtableCreateQueue,
-  generateGeminiImage,
+  generateGeminiImageWithFallback,
   getTipDayNumber,
   claimNextWinner,
   markWinnerUsed,
   releaseWinner,
-  parseClaudeJson,
-  rewriteCopy,
-  getGeminiApiKey,
+  rewriteJson,
+  generateVeoReelWithFallback,
+  tryRefillWinners,
 } from "@/lib/helpers";
-import { feedGrowthPrompt, buildFirstComment, storyOverlayPrompt } from "@/lib/growth";
+import {
+  feedGrowthPrompt,
+  buildEmergencyGrowthContent,
+  buildFirstComment,
+  storyOverlayPrompt,
+  pickEvergreenTopic,
+} from "@/lib/growth";
+import { recordPipelineStatus } from "@/lib/pipeline-status";
 
 export const maxDuration = 180;
 
@@ -28,72 +35,58 @@ export async function GET(request) {
   try {
     winner = await claimNextWinner();
     if (!winner) {
-      return Response.json({
-        ok: true,
-        skipped: true,
-        message: "No new winners left — research cron will refill",
-      });
+      await tryRefillWinners();
+      winner = await claimNextWinner();
     }
 
     const dayNumber = await getTipDayNumber();
-    const source = (winner.fields.Caption || "").slice(0, 1500);
+    const source = winner
+      ? (winner.fields.Caption || "").slice(0, 1500)
+      : pickEvergreenTopic(dayNumber);
 
-    const content = parseClaudeJson(await rewriteCopy(feedGrowthPrompt(source, dayNumber)));
+    let copyError = null;
+    let content;
+    try {
+      content = await rewriteJson(feedGrowthPrompt(source, dayNumber), {
+        requiredKeys: ["hook", "caption"],
+      });
+    } catch (error) {
+      copyError = `copy: ${error.message}`;
+      console.error("AI copy unavailable — using emergency feed copy:", error.message);
+      content = buildEmergencyGrowthContent("feed");
+    }
 
-    let imageBuffer;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        const img = await generateGeminiImage(
-          `Create a clean modern Instagram graphic, square 1:1.
+    const image = await generateGeminiImageWithFallback(
+      `Create a clean modern Instagram graphic, square 1:1.
 Soft cream background, bold dark charcoal headline, small friendly robot mascot,
 flat design, generous whitespace.
 Headline (render exactly): "${content.hook}"
 Subtext (render exactly): "${content.subtext || ""}"
 Tiny label: "Day ${dayNumber}"`
-        );
-        imageBuffer = img.buffer;
-        break;
-      } catch (err) {
-        if (attempt === 2) throw err;
-        await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
-      }
-    }
+    );
 
     const stamp = Date.now();
-    const blob = await put(`posts/${stamp}.png`, imageBuffer, {
+    const blob = await put(`posts/${stamp}.png`, image.buffer, {
       access: "public",
       contentType: "image/png",
     });
 
     let storyUrl = null;
-    try {
-      const story = await generateGeminiImage(
-        storyOverlayPrompt(content.hook, content.storyText, dayNumber)
-      );
-      const storyBlob = await put(`stories/feed-${stamp}.png`, story.buffer, {
-        access: "public",
-        contentType: "image/png",
-      });
-      storyUrl = storyBlob.url;
-    } catch (err) {
-      console.warn("Feed story graphic skipped:", err.message);
-    }
+    const story = await generateGeminiImageWithFallback(
+      storyOverlayPrompt(content.hook, content.storyText, dayNumber),
+      { width: 1080, height: 1920 }
+    );
+    const storyBlob = await put(`stories/feed-${stamp}.png`, story.buffer, {
+      access: "public",
+      contentType: "image/png",
+    });
+    storyUrl = storyBlob.url;
 
     // Optional Veo reel — never block the feed post if this fails
     let videoUrl = null;
     try {
-      const startRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/veo-3.1-fast-generate-preview:predictLongRunning`,
-        {
-          method: "POST",
-          headers: {
-            "x-goog-api-key": getGeminiApiKey(),
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            instances: [
-              {
-                prompt: `Create an actual live-action vertical 9:16 Instagram video, 8 seconds, about "${content.hook}".
+      const video = await generateVeoReelWithFallback(
+        `Create an actual live-action vertical 9:16 Instagram video, 8 seconds, about "${content.hook}".
 Use three distinct cinematic physical B-roll shots: symbolize the problem with a moving environment, use a self-moving prop or camera move, then show a waist-up human reacting to the useful real-world result.
 Frame people only in medium or wide shots with both hands outside the frame. Use environments, silhouettes, reflections and self-moving objects; natural lighting, shallow depth of field, continuous subject and camera motion, quick natural cuts.
 Translate every digital concept into a physical visual metaphor. If a device is unavoidable, show only its back or edge with its display fully out of frame, powered off, or heavily defocused.
@@ -101,45 +94,22 @@ Absolutely no readable phone, laptop, tablet, television, or monitor display. No
 No close-up or focal shot of hands, fingers, feet, teeth, or other anatomy prone to distortion. Keep all hands and fingers completely outside the frame; nobody may hold, tear, press, type on, point at, or present an object. No morphing anatomy, extra fingers, fused limbs, or body-object blending.
 No static graphic, poster, slideshow, cream background, flat illustration, robot mascot, or text-only animation.
 One complete energetic teacher voiceover sentence of no more than 15 words, subtle upbeat music, realistic ambient sound.`,
-              },
-            ],
-            parameters: { aspectRatio: "9:16" },
-          }),
+        {
+          aspectRatio: "9:16",
+          overallBudgetMs: 95000,
         }
       );
-      if (startRes.ok) {
-        const startData = await startRes.json();
-        const op = startData.name;
-        for (let i = 0; i < 18 && op; i++) {
-          await new Promise((r) => setTimeout(r, 5000));
-          const poll = await fetch(`https://generativelanguage.googleapis.com/v1beta/${op}`, {
-            headers: { "x-goog-api-key": getGeminiApiKey() },
-          });
-          if (!poll.ok) continue;
-          const data = await poll.json();
-          if (!data.done) continue;
-          const uri =
-            data.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri;
-          if (!uri) break;
-          const dl = await fetch(uri, {
-            headers: { "x-goog-api-key": getGeminiApiKey() },
-            redirect: "follow",
-          });
-          if (!dl.ok) break;
-          const videoBlob = await put(`reels/${stamp}.mp4`, Buffer.from(await dl.arrayBuffer()), {
-            access: "public",
-            contentType: "video/mp4",
-          });
-          videoUrl = videoBlob.url;
-          break;
-        }
-      }
+      const videoBlob = await put(`reels/${stamp}.mp4`, video.buffer, {
+        access: "public",
+        contentType: "video/mp4",
+      });
+      videoUrl = videoBlob.url;
     } catch (err) {
       console.warn("Optional Veo skipped:", err.message);
     }
 
     await airtableCreateQueue({
-      Hook: `Day ${dayNumber}: ${content.hook}`,
+      Hook: content.hook,
       Caption: content.caption,
       "Image URL": blob.url,
       Status: "Ready",
@@ -149,14 +119,26 @@ One complete energetic teacher voiceover sentence of no more than 15 words, subt
       "First Comment": content.firstComment || buildFirstComment(),
       "Story Text": content.storyText || content.hook,
       "Story Image URL": storyUrl || undefined,
-      "Source URL": winner.fields["Post URL"] || "",
+      "Source URL": winner?.fields?.["Post URL"] || "",
       "Day Number": dayNumber,
       "Bonus Prompt": content.bonusPrompt || "",
+      "Fallback Used": Boolean(copyError || image.fallback || story.fallback),
+      "Last Error":
+        [copyError, image.error, story.error].filter(Boolean).join(" | ").slice(0, 1000) ||
+        undefined,
       Sequence: 1,
     });
 
-    if (!winner._claimedAsUsed) await markWinnerUsed(winner.id);
+    if (winner && !winner._claimedAsUsed) await markWinnerUsed(winner.id);
 
+    await recordPipelineStatus("generate", {
+      outcome: "queued",
+      details: {
+        hook: content.hook,
+        type: videoUrl ? "Reel" : "Feed",
+        fallbackUsed: Boolean(copyError || image.fallback || story.fallback),
+      },
+    });
     return Response.json({
       ok: true,
       queued: content.hook,
@@ -167,6 +149,7 @@ One complete energetic teacher voiceover sentence of no more than 15 words, subt
   } catch (err) {
     if (winner?.id) await releaseWinner(winner.id);
     console.error("Generate cron error:", err);
+    await recordPipelineStatus("generate", { outcome: "failed", error: err.message });
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

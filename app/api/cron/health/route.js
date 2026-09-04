@@ -8,6 +8,7 @@ import {
   getGeminiApiKey,
   igGraphBase,
 } from "@/lib/helpers";
+import { loadPipelineStatuses } from "@/lib/pipeline-status";
 
 export const maxDuration = 30;
 
@@ -73,9 +74,13 @@ export async function GET(request) {
     readyFeed: 0,
     readyReels: 0,
     readyCarousels: 0,
+    readyFallbacks: 0,
     failed: 0,
+    lastPostedAt: null,
+    hoursSinceLastPost: null,
     tipDay: 1,
   };
+  let generationIssues = [];
 
   try {
     const [winners, ready, failed, posted] = await Promise.all([
@@ -95,17 +100,47 @@ export async function GET(request) {
     stats.readyFeed = ready.filter((r) => !r.fields.Type || r.fields.Type === "Feed").length;
     stats.readyReels = ready.filter((r) => r.fields.Type === "Reel").length;
     stats.readyCarousels = ready.filter((r) => r.fields.Type === "Carousel").length;
+    const readyWithFallbacks = ready.filter(
+      (r) => r.fields["Fallback Used"] || r.fields["Last Error"]
+    );
+    stats.readyFallbacks = readyWithFallbacks.length;
+    generationIssues = readyWithFallbacks.slice(0, 5).map((r) => ({
+      id: r.id,
+      hook: r.fields.Hook || "Untitled",
+      type: r.fields.Type || "Feed",
+      error: r.fields["Last Error"] || "Provider fallback used",
+    }));
     stats.failed = failed.length + failedPosted.length;
     stats.tipDay = await getTipDayNumber();
+    const postedTimes = posted
+      .map((r) => Date.parse(r.fields["Posted At"] || ""))
+      .filter(Number.isFinite);
+    if (postedTimes.length) {
+      const latestPostedTime = Math.max(...postedTimes);
+      stats.lastPostedAt = new Date(latestPostedTime).toISOString();
+      stats.hoursSinceLastPost = Math.floor((Date.now() - latestPostedTime) / 3600000);
+    }
 
     if (stats.winnersWaiting < 3) warnings.push(`Low winners fuel (${stats.winnersWaiting}) — research soon`);
     if (stats.readyReels === 0) warnings.push("No Ready Reel — generate-reel before 18:00 UTC");
     if (stats.readyFeed + stats.readyCarousels === 0) {
       warnings.push("No Ready feed/carousel for 15:00 UTC post");
     }
+    if (stats.readyFallbacks > 0) {
+      warnings.push(`${stats.readyFallbacks} Ready item(s) used a generation fallback`);
+    }
     if (stats.failed > 0) warnings.push(`${stats.failed} Failed queue rows need attention`);
   } catch (err) {
     warnings.push(`Airtable health check failed: ${err.message}`);
+  }
+
+  const pipelineStatuses = await loadPipelineStatuses();
+  for (const status of Object.values(pipelineStatuses)) {
+    if (status.error) {
+      warnings.push(
+        `Last ${status.operation} ${status.outcome} at ${status.recordedAt}: ${status.error}`
+      );
+    }
   }
 
   return Response.json({
@@ -115,6 +150,8 @@ export async function GET(request) {
     igTokenMeta,
     geminiKeyMeta,
     stats,
+    generationIssues,
+    pipelineStatuses,
     warnings,
     ready: ok,
   });

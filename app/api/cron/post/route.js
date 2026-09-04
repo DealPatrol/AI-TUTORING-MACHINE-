@@ -18,6 +18,7 @@ import {
   getIgCredentials,
   igGraphBase,
 } from "@/lib/helpers";
+import { recordPipelineStatus } from "@/lib/pipeline-status";
 
 export const maxDuration = 120;
 
@@ -33,6 +34,9 @@ export async function GET(request) {
       queue = await listReadyQueue("Feed");
     }
     if (queue.length === 0) {
+      await recordPipelineStatus("post", {
+        outcome: "skipped",
+      });
       return Response.json({
         ok: true,
         skipped: true,
@@ -141,6 +145,10 @@ export async function GET(request) {
       "IG Media ID": published.id,
     });
 
+    await recordPipelineStatus("post", {
+      outcome: "posted",
+      details: { hook: post.fields.Hook, type, igMediaId: published.id },
+    });
     return Response.json({
       ok: true,
       posted: post.fields.Hook,
@@ -152,6 +160,7 @@ export async function GET(request) {
   } catch (err) {
     console.error("Post cron error:", err);
     if (post?.id) await markQueueFailed(post.id, err.message, { retryCount: post.fields["Retry Count"] || 0 });
+    await recordPipelineStatus("post", { outcome: "failed", error: err.message });
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

@@ -8,6 +8,8 @@ export default function DashboardClient() {
     winners: [],
     posted: [],
     failed: [],
+    generationIssues: [],
+    pipelineStatuses: {},
     warnings: [],
     tipDay: 1,
     stats: { readyFeed: 0, readyReels: 0, readyCarousels: 0, winnersWaiting: 0, failed: 0 },
@@ -377,10 +379,13 @@ export default function DashboardClient() {
 
       {/* System Status */}
       <div className="setup-section">
-        <h3>✅ System Live — All Systems Configured</h3>
+        <h3>
+          {data?.warnings?.length ? "⚠ Pipeline needs attention" : "✅ Pipeline healthy"}
+        </h3>
         <p>
-          Connected to Instagram <strong>@unlocking__ai</strong>. Every credential is set and the
-          automated pipeline is running.
+          Connected to Instagram <strong>@unlocking__ai</strong>. Environment variables can be
+          configured even when an external provider has failed; use Health Check and the latest
+          run details to confirm the pipeline is actually operating.
         </p>
         <ul style={{ marginLeft: "2rem", marginBottom: "1rem" }}>
           <li><code>AIRTABLE_API_KEY</code> - Configured ✓</li>
@@ -398,7 +403,32 @@ export default function DashboardClient() {
           carousel Tue/Thu/Sat 09:00 · recycle Mon 10:00 · recap Sun 10:00 · post 15:00 · Reel post
           18:00 · engage 19:00/21:00 · boost Story 20:00 · insights 22:00.
         </p>
+        <p>
+          <strong>After deploying a fix:</strong> Trigger Generate → confirm a Ready item appears →
+          Trigger Post Reel. Use Trigger Generate Reel first when you specifically want a new Reel.
+        </p>
       </div>
+      {Object.keys(data?.pipelineStatuses || {}).length > 0 && (
+        <div className="section" style={{ marginBottom: "2rem" }}>
+          <div className="section-header">
+            <h2>Latest pipeline runs</h2>
+            <p>Most recent generation and publishing result</p>
+          </div>
+          <div className="section-content">
+            {Object.values(data.pipelineStatuses).map((status) => (
+              <div key={status.operation} className="item">
+                <div className="item-title">
+                  {status.operation}: {status.outcome}
+                </div>
+                <div className="item-meta">
+                  <span>{status.recordedAt || "time unavailable"}</span>
+                </div>
+                {status.error && <div className="item-caption">{status.error}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {data?.failed?.length > 0 && (
         <div className="section" style={{ marginBottom: "2rem" }}>
           <div className="section-header">
@@ -407,6 +437,23 @@ export default function DashboardClient() {
           </div>
           <div className="section-content">
             {data.failed.map((post) => (
+              <div key={post.id} className="item">
+                <div className="item-title">{post.hook}</div>
+                <div className="item-meta">{typeBadge(post.type)}</div>
+                <div className="item-caption">{post.error}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {data?.generationIssues?.length > 0 && (
+        <div className="section" style={{ marginBottom: "2rem" }}>
+          <div className="section-header">
+            <h2>Generation fallbacks</h2>
+            <p>These Ready posts are safe to publish, but provider errors need attention</p>
+          </div>
+          <div className="section-content">
+            {data.generationIssues.map((post) => (
               <div key={post.id} className="item">
                 <div className="item-title">{post.hook}</div>
                 <div className="item-meta">{typeBadge(post.type)}</div>

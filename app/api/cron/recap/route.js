@@ -4,13 +4,17 @@ import { put } from "@vercel/blob";
 import {
   checkCronAuth,
   airtableCreateQueue,
-  rewriteCopy,
-  parseClaudeJson,
-  generateGeminiImage,
+  rewriteJson,
+  generateGeminiImageWithFallback,
   getTipDayNumber,
   listPostedQueue,
 } from "@/lib/helpers";
-import { weeklyRecapPrompt, buildFirstComment, storyOverlayPrompt } from "@/lib/growth";
+import {
+  weeklyRecapPrompt,
+  buildEmergencyGrowthContent,
+  buildFirstComment,
+  storyOverlayPrompt,
+} from "@/lib/growth";
 import { recentPostedHooks } from "@/lib/growth-stats";
 
 export const maxDuration = 300;
@@ -32,41 +36,58 @@ export async function GET(request) {
     }
 
     const dayNumber = await getTipDayNumber();
-    const content = parseClaudeJson(await rewriteCopy(weeklyRecapPrompt(hooks, dayNumber)));
+    let content;
+    let copyError = null;
+    try {
+      content = await rewriteJson(weeklyRecapPrompt(hooks, dayNumber), {
+        requiredKeys: ["hook", "caption", "slides"],
+      });
+    } catch (error) {
+      copyError = `copy: ${error.message}`;
+      console.error("AI copy unavailable — using emergency recap copy:", error.message);
+      content = buildEmergencyGrowthContent("carousel");
+    }
     const slides = Array.isArray(content.slides) ? content.slides.slice(0, 7) : [];
     if (slides.length < 3) throw new Error("Recap carousel needs at least 3 slides");
 
     const stamp = Date.now();
     const slideUrls = [];
+    const fallbackErrors = copyError ? [copyError] : [];
     for (let i = 0; i < slides.length; i++) {
       const slide = slides[i];
-      const { buffer } = await generateGeminiImage(
+      const image = await generateGeminiImageWithFallback(
         `Create a clean Instagram carousel slide, square 1:1.
-Style: soft cream background, bold dark charcoal sans-serif,
-small friendly robot mascot accent, generous whitespace, flat design.
-Day ${dayNumber}. Slide ${i + 1} of ${slides.length}.
+Style: original flat graphic design, huge bold sans-serif type, black and white
+with one warm red accent, strong hierarchy, high contrast, and generous spacing.
+Use simple original geometric accents only. No photos, people, celebrity or
+influencer likenesses, trademarked logos, brand mashups, or copied social
+account styling.
+Tiny metadata label: "Day ${dayNumber}". Slide ${i + 1} of ${slides.length}.
 Headline (render exactly): "${slide.headline || ""}"
 Body text (render exactly): "${slide.body || ""}"
 ${i === 0 ? 'Top-left small label: "SWIPE →"' : ""}
-${i === slides.length - 1 ? 'Bottom label: "Follow for daily AI tips"' : ""}`
+${i === slides.length - 1 ? 'Bottom label: "Save these prompts · Comment HOW"' : ""}`
       );
-      const blob = await put(`carousels/recap-${stamp}-${i + 1}.png`, buffer, {
+      if (image.error) fallbackErrors.push(`slide ${i + 1}: ${image.error}`);
+      const blob = await put(`carousels/recap-${stamp}-${i + 1}.png`, image.buffer, {
         access: "public",
         contentType: "image/png",
       });
       slideUrls.push(blob.url);
     }
 
-    const story = await generateGeminiImage(
-      storyOverlayPrompt(content.hook, content.storyText, dayNumber)
+    const story = await generateGeminiImageWithFallback(
+      storyOverlayPrompt(content.hook, content.storyText, dayNumber),
+      { width: 1080, height: 1920 }
     );
+    if (story.error) fallbackErrors.push(`story: ${story.error}`);
     const storyBlob = await put(`stories/recap-${stamp}.png`, story.buffer, {
       access: "public",
       contentType: "image/png",
     });
 
     await airtableCreateQueue({
-      Hook: `Day ${dayNumber}: ${content.hook}`,
+      Hook: content.hook,
       Caption: content.caption,
       "Image URL": slideUrls[0],
       "Slide URLs": JSON.stringify(slideUrls),
@@ -75,13 +96,15 @@ ${i === slides.length - 1 ? 'Bottom label: "Follow for daily AI tips"' : ""}`
       "First Comment":
         content.firstComment ||
         buildFirstComment({
-          cta: `Day ${dayNumber} — Save this week's AI tips, then follow for tomorrow.`,
+          cta: "Save this prompt pack. Comment HOW for the reusable templates.",
         }),
       "Story Text": content.storyText || content.hook,
       "Story Image URL": storyBlob.url,
       "Source URL": "recap:weekly",
       "Day Number": dayNumber,
       "Bonus Prompt": content.bonusPrompt || "",
+      "Fallback Used": fallbackErrors.length > 0,
+      "Last Error": fallbackErrors.join(" | ").slice(0, 1000) || undefined,
     });
 
     return Response.json({

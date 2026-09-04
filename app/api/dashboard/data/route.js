@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { airtableList, getTipDayNumber, appBaseUrl } from "@/lib/helpers";
 import { loadGrowthHistory, summarizeGrowth, buildGrowthRecommendations } from "@/lib/growth-stats";
+import { loadPipelineStatuses } from "@/lib/pipeline-status";
 
 export const dynamic = "force-dynamic";
 
@@ -33,12 +34,27 @@ export async function GET() {
   const readyReels = queue.filter((r) => r.fields.Type === "Reel").length;
   const readyFeed = queue.filter((r) => !r.fields.Type || r.fields.Type === "Feed").length;
   const readyCarousels = queue.filter((r) => r.fields.Type === "Carousel").length;
-  if (queue.length + winners.length + posted.length > 0) {
-    if (winners.length < 3) warnings.push(`Low winners (${winners.length}) — run research`);
-    if (readyReels === 0) warnings.push("No Ready Reel for today's 18:00 UTC post");
-    if (readyFeed + readyCarousels === 0) warnings.push("No Ready feed/carousel for 15:00 UTC");
-    if (failed.length) warnings.push(`${failed.length} failed queue item(s)`);
-  }
+  const generationIssues = queue
+    .filter((r) => r.fields["Fallback Used"] || r.fields["Last Error"])
+    .slice(0, 10)
+    .map((r) => ({
+      id: r.id,
+      hook: r.fields.Hook || "Untitled",
+      type: r.fields.Type || "Feed",
+      error: r.fields["Last Error"] || "Provider fallback used",
+    }));
+  const postedTimes = posted
+    .map((r) => Date.parse(r.fields["Posted At"] || ""))
+    .filter(Number.isFinite);
+  const latestPostedTime = postedTimes.length ? Math.max(...postedTimes) : null;
+  const hoursSinceLastPost =
+    latestPostedTime == null ? null : Math.floor((Date.now() - latestPostedTime) / 3600000);
+
+  if (winners.length < 3) warnings.push(`Low winners (${winners.length}) — run research`);
+  if (readyReels === 0) warnings.push("No Ready Reel for today's 18:00 UTC post");
+  if (readyFeed + readyCarousels === 0) warnings.push("No Ready feed/carousel for 15:00 UTC");
+  if (generationIssues.length) warnings.push(`${generationIssues.length} Ready item(s) used a generation fallback`);
+  if (failed.length) warnings.push(`${failed.length} failed queue item(s)`);
 
   const topPosted = [...posted]
     .map((r) => ({
@@ -55,6 +71,14 @@ export async function GET() {
     .sort((a, b) => (b.reach || 0) - (a.reach || 0));
 
   const history = await loadGrowthHistory();
+  const pipelineStatuses = await loadPipelineStatuses();
+  for (const status of Object.values(pipelineStatuses)) {
+    if (status.error) {
+      warnings.push(
+        `Last ${status.operation} ${status.outcome} at ${status.recordedAt}: ${status.error}`
+      );
+    }
+  }
   const summary = summarizeGrowth(history, topPosted);
   const recommendations = buildGrowthRecommendations({
     posted: topPosted,
@@ -99,12 +123,17 @@ export async function GET() {
       type: r.fields.Type || "Feed",
       error: r.fields["Last Error"],
     })),
+    generationIssues,
+    pipelineStatuses,
     stats: {
       readyFeed,
       readyReels,
       readyCarousels,
       winnersWaiting: winners.length,
       failed: failed.length,
+      readyFallbacks: generationIssues.length,
+      lastPostedAt: latestPostedTime == null ? null : new Date(latestPostedTime).toISOString(),
+      hoursSinceLastPost,
       tipDay,
     },
     growth: {
