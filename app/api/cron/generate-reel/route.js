@@ -210,7 +210,6 @@ Subtle upbeat music and realistic ambient sound. ${ending}`;
       const beats = [
         content.hook,
         ...(Array.isArray(content.beats) ? content.beats : []),
-        "Comment HOW for the AI playbook",
       ].slice(0, 6);
       const slideUrls = [coverBlob.url];
       for (let i = 0; i < beats.length; i++) {
