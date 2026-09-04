@@ -45,8 +45,11 @@ export async function GET(request) {
       const slide = slides[i];
       const { buffer } = await generateGeminiImage(
         `Create a clean Instagram carousel slide, square 1:1.
-Style: soft cream background, bold dark charcoal sans-serif,
-small friendly robot mascot accent, generous whitespace, flat design.
+Style: original flat graphic design, huge bold sans-serif type, black and white
+with one warm red accent, strong hierarchy, high contrast, and generous spacing.
+Use simple original geometric accents only. No photos, people, celebrity or
+influencer likenesses, trademarked logos, brand mashups, or copied social
+account styling.
 Tiny metadata label: "Day ${dayNumber}". Slide ${i + 1} of ${slides.length}.
 Headline (render exactly): "${slide.headline || ""}"
 Body text (render exactly): "${slide.body || ""}"

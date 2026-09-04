@@ -93,6 +93,7 @@ assert.ok(pickCommunityReply("").length > 0);
 const reelPrompt = reelGrowthPrompt("Turn one note into useful social hooks", 47);
 assert.match(reelPrompt, /specific result or unexpected instruction immediately/);
 assert.match(reelPrompt, /Paste your[\s\S]*Then type/);
+assert.match(reelPrompt, /Name the AI tool when the workflow is tool-specific/);
 assert.match(reelPrompt, /Day 47[\s\S]*tiny cover metadata/);
 assert.match(reelPrompt, /Never put it in the hook, cover headline, beats, voiceover, or CTA/);
 assert.match(reelPrompt, /"bonusPrompt"/);
@@ -105,8 +106,12 @@ assert.match(feedPrompt, /never start with Day/);
 assert.match(feedPrompt, /"firstComment"/);
 
 const carouselPrompt = carouselGrowthPrompt("Answer from these notes", 47);
-assert.match(carouselPrompt, /copy-paste prompt in readable chunks/);
-assert.match(carouselPrompt, /Save this prompt/);
+assert.match(carouselPrompt, /numbered five-prompt sequence/);
+assert.match(carouselPrompt, /PROMPT 1 through PROMPT 5/);
+assert.match(carouselPrompt, /simple believable math or before\/after contrast/);
+assert.match(carouselPrompt, /Never imply guaranteed earnings/);
+assert.match(carouselPrompt, /Never request or imitate celebrity/);
+assert.match(carouselPrompt, /SAVE THESE 5 PROMPTS/);
 assert.match(carouselPrompt, /"slides"/);
 
 const firstComment = buildFirstComment({

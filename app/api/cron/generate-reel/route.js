@@ -53,8 +53,10 @@ export async function GET(request) {
 
     const cover = await generateGeminiImage(
       `Create a vertical Instagram Reel cover, 9:16 portrait.
-Style: soft cream background, bold dark charcoal sans-serif headline,
-small friendly robot mascot, flat modern design, no photo, high contrast.
+Style: original flat graphic design, huge bold sans-serif headline, black and
+white with one warm red accent, strong hierarchy, generous spacing, high
+contrast, readable on mobile in one second. No photo, celebrity or influencer
+likeness, trademarked logo, brand mashup, or copied social account styling.
 Big headline text (render exactly): "${content.coverText || content.hook}"
 Tiny label at top: "Day ${dayNumber}"
 Tiny label at bottom: "Copy it · save it · use it"`
@@ -108,6 +110,8 @@ Tiny label at bottom: "Copy it · save it · use it"`
 - Continuous subject movement and noticeable camera movement in every shot
 - Cinematic natural lighting, shallow depth of field, crisp realistic detail
 - Translate digital concepts into physical visual metaphors and human actions
+- Use original anonymous casting; never depict or resemble a celebrity, public
+  figure, influencer, mascot, or trademarked character
 - If a device is unavoidable, show only its back or edge; its display must be fully out of frame, powered off, heavily defocused, or hidden by glare
 - Keep all backgrounds and reflective surfaces free of legible text
 - Energetic pacing designed for an Instagram Reel
@@ -192,8 +196,11 @@ Subtle upbeat music and realistic ambient sound. ${ending}`;
       for (let i = 0; i < beats.length; i++) {
         const { buffer } = await generateGeminiImage(
           `Create a clean Instagram carousel slide, square 1:1.
-Style: soft cream background, bold dark charcoal sans-serif, small robot mascot, flat design.
-Day ${dayNumber}. Slide ${i + 1}.
+Style: original flat graphic design, huge bold sans-serif type, black and white
+with one warm red accent, strong hierarchy, high contrast, and generous spacing.
+No photos, people, celebrity or influencer likenesses, trademarked logos,
+brand mashups, or copied social account styling.
+Tiny metadata label: "Day ${dayNumber}". Slide ${i + 1}.
 Headline (render exactly): "${String(beats[i]).slice(0, 80)}"`
         );
         const blob = await put(`reels/fallback-${stamp}-${i + 1}.png`, buffer, {
