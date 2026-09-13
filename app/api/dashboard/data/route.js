@@ -20,7 +20,16 @@ export async function GET() {
       airtableList(
         "Queue",
         "filterByFormula=" + encodeURIComponent(`{Status}="Posted"`) + "&maxRecords=40&sort%5B0%5D%5Bfield%5D=Posted%20At&sort%5B0%5D%5Bdirection%5D=desc"
-      ),
+      ).catch((error) => {
+        const message = String(error.message || "");
+        if (!message.includes("UNKNOWN_FIELD_NAME") && !message.includes("Unknown field") && !message.includes("INVALID_SORT")) {
+          throw error;
+        }
+        return airtableList(
+          "Queue",
+          "filterByFormula=" + encodeURIComponent(`{Status}="Posted"`) + "&maxRecords=40"
+        );
+      }),
       airtableList(
         "Queue",
         "filterByFormula=" + encodeURIComponent(`{Status}="Failed"`) + "&maxRecords=10"

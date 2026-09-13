@@ -42,7 +42,7 @@ export async function GET(request) {
       if (msg.includes("UNKNOWN_FIELD_NAME") || msg.includes("Unknown field") || msg.includes("INVALID_SORT")) {
         posted = await airtableList(
           "Queue",
-          "filterByFormula=" + encodeURIComponent(`{Status}="Posted"`) + "&maxRecords=12&sort%5B0%5D%5Bfield%5D=Posted%20At&sort%5B0%5D%5Bdirection%5D=desc"
+          "filterByFormula=" + encodeURIComponent(`{Status}="Posted"`) + "&maxRecords=12"
         );
       } else {
         throw err;
