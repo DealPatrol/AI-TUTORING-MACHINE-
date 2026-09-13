@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --experimental-detect-module scripts/test-growth-stats.mjs && node --experimental-detect-module scripts/test-generation-resilience.mjs"
+    "test": "node --experimental-detect-module scripts/test-growth-stats.mjs && node --experimental-detect-module scripts/test-generation-resilience.mjs && node --experimental-detect-module scripts/test-daily-publishing.mjs"
   },
   "dependencies": {
     "@vercel/blob": "^0.27.0",
@@ -14,7 +14,8 @@
     "ffmpeg-static": "^5.3.0",
     "next": "^14.2.0",
     "react": "^18.3.0",
-    "react-dom": "^18.3.0"
+    "react-dom": "^18.3.0",
+    "sharp": "^0.35.4"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

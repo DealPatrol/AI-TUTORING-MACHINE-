@@ -85,7 +85,7 @@ export default function DashboardClient() {
       <div className="dashboard-header">
         <h1>AI Tutor Machine</h1>
         <p>
-          Growth engine · Day {data?.tipDay || data?.stats?.tipDay || 1} streak · Daily Reels ·
+          Growth engine · Day {data?.tipDay || data?.stats?.tipDay || 1} streak · Daily AI lessons ·
           HOW playbooks · Comment replies · Recycle + recap
         </p>
         {data?.stats && (
@@ -245,8 +245,8 @@ export default function DashboardClient() {
         </button>
         {[
           ["research", "Research", "#6366f1"],
-          ["generate", "Generate Feed", "#8b5cf6"],
-          ["generate-reel", "Generate Reel", "#db2777"],
+          ["generate", "Generate Daily Lesson", "#8b5cf6"],
+          ["generate-reel", "Generate (AI mode / lesson)", "#db2777"],
           ["generate-carousel", "Generate Carousel", "#059669"],
           ["post", "Post Feed/Carousel", "#ec4899"],
           ["post-reel", "Post Reel", "#be185d"],
@@ -312,7 +312,7 @@ export default function DashboardClient() {
             )}
           </div>
           <div className="section-footer">
-            Auto-posts: feed/carousel 15:00 UTC · Reel 18:00 UTC · boost Story 20:00 UTC
+            Auto-posts: one lesson daily at 17:00 UTC · insights at 22:00 UTC
           </div>
         </div>
 
@@ -388,24 +388,22 @@ export default function DashboardClient() {
           run details to confirm the pipeline is actually operating.
         </p>
         <ul style={{ marginLeft: "2rem", marginBottom: "1rem" }}>
-          <li><code>AIRTABLE_API_KEY</code> - Configured ✓</li>
-          <li><code>AIRTABLE_BASE_ID</code> - Configured ✓</li>
-          <li><code>ANTHROPIC_API_KEY</code> - Configured ✓</li>
-          <li><code>GEMINI_API_KEY</code> - Configured ✓</li>
-          <li><code>APIFY_TOKEN</code> - Configured ✓</li>
-          <li><code>APIFY_TASK_ID</code> - Configured ✓</li>
-          <li><code>CRON_SECRET</code> - Configured ✓</li>
-          <li><code>IG_ACCESS_TOKEN</code> - Configured ✓</li>
-          <li><code>IG_USER_ID</code> - Configured ✓</li>
+          <li><code>AIRTABLE_API_KEY</code> - Check in project settings</li>
+          <li><code>AIRTABLE_BASE_ID</code> - Check in project settings</li>
+          <li><code>ANTHROPIC_API_KEY</code> - Check in project settings</li>
+          <li><code>GEMINI_API_KEY</code> - Check in project settings</li>
+          <li><code>APIFY_TOKEN</code> - Check in project settings</li>
+          <li><code>APIFY_TASK_ID</code> - Check in project settings</li>
+          <li><code>CRON_SECRET</code> - Check in project settings</li>
+          <li><code>IG_ACCESS_TOKEN</code> - Check in project settings</li>
+          <li><code>IG_USER_ID</code> - Check in project settings</li>
         </ul>
         <p>
-          <strong>Growth schedule (UTC):</strong> research Mon 06:00 · generate 07:00 · Reel 08:00 ·
-          carousel Tue/Thu/Sat 09:00 · recycle Mon 10:00 · recap Sun 10:00 · post 15:00 · Reel post
-          18:00 · engage 19:00/21:00 · boost Story 20:00 · insights 22:00.
+          <strong>Daily schedule (UTC):</strong> lesson 11:00 · publish 17:00 · insights 22:00 · health 23:00.
         </p>
         <p>
           <strong>After deploying a fix:</strong> Trigger Generate → confirm a Ready item appears →
-          Trigger Post Reel. Use Trigger Generate Reel first when you specifically want a new Reel.
+          Post Feed/Carousel. Curated mode works without AI credits; AI video mode requires provider credits.
         </p>
       </div>
       {Object.keys(data?.pipelineStatuses || {}).length > 0 && (
@@ -467,9 +465,9 @@ export default function DashboardClient() {
       <div className="setup-section">
         <h3>Growth engine</h3>
         <p>
-          Daily Reel at <strong>18:00 UTC</strong>. Comment <strong>HOW</strong> playbooks go out at
-          19:00 & 21:00. Every other comment gets a like + short reply. A follow-up Story boosts
-          the same-day post at 20:00. Mondays recycle proven winners; Sundays ship a save-this recap.
+          One useful five-slide lesson each day, with a copyable prompt and an accuracy check.
+          The starter library rotates through 14 topics. Track saves, reach and follower changes;
+          growth is measured, never guaranteed. Automatic comment replies are not scheduled.
         </p>
       </div>
     </div>

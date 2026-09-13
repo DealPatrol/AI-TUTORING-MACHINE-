@@ -1,3 +1,4 @@
+import { generateDailyLesson } from "@/lib/daily-generator";
 // CAROUSEL — save-magnet multi-slide posts (stronger than single images for growth).
 
 import { put } from "@vercel/blob";
@@ -24,6 +25,7 @@ import { recordPipelineStatus } from "@/lib/pipeline-status";
 export const maxDuration = 300;
 
 export async function GET(request) {
+  if (process.env.CONTENT_MODE !== "ai") return generateDailyLesson(request, "generate-carousel");
   if (!checkCronAuth(request)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }

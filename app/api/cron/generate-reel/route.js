@@ -1,3 +1,4 @@
+import { generateDailyLesson } from "@/lib/daily-generator";
 // DAILY REEL — script + cover + Veo video (+ model fallback) + Story → Queue
 // If all Veo models fail, ships a save-magnet carousel the same day so growth never skips.
 
@@ -30,6 +31,7 @@ import { recordPipelineStatus } from "@/lib/pipeline-status";
 export const maxDuration = 300;
 
 export async function GET(request) {
+  if (process.env.CONTENT_MODE !== "ai") return generateDailyLesson(request, "generate-reel");
   if (!checkCronAuth(request)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }

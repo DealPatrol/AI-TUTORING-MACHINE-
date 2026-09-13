@@ -20,7 +20,7 @@ import {
 } from "@/lib/helpers";
 import { recordPipelineStatus } from "@/lib/pipeline-status";
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 export async function GET(request) {
   if (!checkCronAuth(request)) {
@@ -28,6 +28,8 @@ export async function GET(request) {
   }
 
   let post = null;
+  let published = null;
+  let publishAttempted = false;
   try {
     let queue = await listReadyQueue("Carousel");
     if (queue.length === 0) {
@@ -124,7 +126,18 @@ export async function GET(request) {
     }
 
     // 3. Publish it after Instagram finishes processing the container.
-    const published = await publishIgContainer(container.id, token, igUserId);
+    // Persist an uncertainty marker before the external side effect. If the
+    // response is lost, leave this row for reconciliation instead of duplicating it.
+    await safeAirtableUpdate("Queue", post.id, { "Last Error": "[PUBLISHING] Publication started; reconcile with Instagram before retrying" });
+    publishAttempted = true;
+    published = await publishIgContainer(container.id, token, igUserId);
+
+    await safeAirtableUpdate("Queue", post.id, {
+      Status: "Posted",
+      "Posted At": new Date().toISOString(),
+      "IG Media ID": published.id,
+      "Last Error": "",
+    });
 
     const comment = await postIgFirstComment(
       published.id,
@@ -139,11 +152,7 @@ export async function GET(request) {
       ? await publishIgStory({ igUserId, token, imageUrl: storyImage })
       : null;
 
-    await safeAirtableUpdate("Queue", post.id, {
-      Status: "Posted",
-      "Posted At": new Date().toISOString(),
-      "IG Media ID": published.id,
-    });
+
 
     await recordPipelineStatus("post", {
       outcome: "posted",
@@ -159,7 +168,7 @@ export async function GET(request) {
     });
   } catch (err) {
     console.error("Post cron error:", err);
-    if (post?.id) await markQueueFailed(post.id, err.message, { retryCount: post.fields["Retry Count"] || 0 });
+    if (post?.id && !publishAttempted) await markQueueFailed(post.id, err.message, { retryCount: post.fields["Retry Count"] || 0 });
     await recordPipelineStatus("post", { outcome: "failed", error: err.message });
     return Response.json({ error: err.message }, { status: 500 });
   }
