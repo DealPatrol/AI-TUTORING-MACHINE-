@@ -30,6 +30,8 @@ export async function GET(request) {
   }
 
   let post = null;
+  let published = null;
+  let publishAttempted = false;
   try {
     // Prefer a real Reel → Carousel → any Ready image so the daily slot never goes silent
     // when Airtable lacks Type / Video URL fields.
@@ -122,7 +124,18 @@ export async function GET(request) {
       await waitForIgContainer(container.id, token, { attempts: 15, delayMs: 2000 });
     }
 
-    const published = await publishIgContainer(container.id, token, igUserId);
+    // Persist an uncertainty marker before the external side effect. If the
+    // response is lost, leave this row for reconciliation instead of duplicating it.
+    await safeAirtableUpdate("Queue", post.id, { "Last Error": "[PUBLISHING] Publication started; reconcile with Instagram before retrying" });
+    publishAttempted = true;
+    published = await publishIgContainer(container.id, token, igUserId);
+
+    await safeAirtableUpdate("Queue", post.id, {
+      Status: "Posted",
+      "Posted At": new Date().toISOString(),
+      "IG Media ID": published.id,
+      "Last Error": "",
+    });
 
     const comment = await postIgFirstComment(
       published.id,
@@ -138,11 +151,7 @@ export async function GET(request) {
       ? await publishIgStory({ igUserId, token, imageUrl: storyImage })
       : null;
 
-    await safeAirtableUpdate("Queue", post.id, {
-      Status: "Posted",
-      "Posted At": new Date().toISOString(),
-      "IG Media ID": published.id,
-    });
+
 
     await recordPipelineStatus("post-reel", {
       outcome: "posted",
@@ -158,7 +167,7 @@ export async function GET(request) {
     });
   } catch (err) {
     console.error("Post reel cron error:", err);
-    if (post?.id) {
+    if (post?.id && !publishAttempted) {
       await markQueueFailed(post.id, err.message, { retryCount: post.fields["Retry Count"] || 0 });
     }
     await recordPipelineStatus("post-reel", { outcome: "failed", error: err.message });

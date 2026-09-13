@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { airtableList, getTipDayNumber, appBaseUrl } from "@/lib/helpers";
+import { airtableList, getTipDayNumber, appBaseUrl, cleanQueueCaption } from "@/lib/helpers";
 import { loadGrowthHistory, summarizeGrowth, buildGrowthRecommendations } from "@/lib/growth-stats";
 import { loadPipelineStatuses } from "@/lib/pipeline-status";
 
@@ -19,7 +19,7 @@ export async function GET() {
       airtableList("Winners", "filterByFormula=" + encodeURIComponent(`{Status}="New"`)),
       airtableList(
         "Queue",
-        "filterByFormula=" + encodeURIComponent(`{Status}="Posted"`) + "&maxRecords=12"
+        "filterByFormula=" + encodeURIComponent(`{Status}="Posted"`) + "&maxRecords=40&sort%5B0%5D%5Bfield%5D=Posted%20At&sort%5B0%5D%5Bdirection%5D=desc"
       ),
       airtableList(
         "Queue",
@@ -51,8 +51,8 @@ export async function GET() {
     latestPostedTime == null ? null : Math.floor((Date.now() - latestPostedTime) / 3600000);
 
   if (winners.length < 3) warnings.push(`Low winners (${winners.length}) — run research`);
-  if (readyReels === 0) warnings.push("No Ready Reel for today's 18:00 UTC post");
-  if (readyFeed + readyCarousels === 0) warnings.push("No Ready feed/carousel for 15:00 UTC");
+  if (process.env.CONTENT_MODE === "ai" && readyReels === 0) warnings.push("No Ready Reel (optional in curated mode)");
+  if (readyFeed + readyCarousels === 0) warnings.push("No Ready feed/carousel for 17:00 UTC");
   if (generationIssues.length) warnings.push(`${generationIssues.length} Ready item(s) used a generation fallback`);
   if (failed.length) warnings.push(`${failed.length} failed queue item(s)`);
 
@@ -94,7 +94,7 @@ export async function GET() {
       id: r.id,
       sequence: r.fields.Sequence,
       hook: r.fields.Hook,
-      caption: r.fields.Caption,
+      caption: cleanQueueCaption(r.fields.Caption),
       imageUrl: r.fields["Image URL"],
       videoUrl: r.fields["Video URL"],
       storyImageUrl: r.fields["Story Image URL"],
@@ -145,7 +145,7 @@ export async function GET() {
       recommendations,
     },
     scheduleHint:
-      "Reel 18:00 · engage 19:00/21:00 · boost Story 20:00 · insights 22:00 · recap Sundays · recycle Mondays",
+      "Daily lesson 11:00 UTC · publish 17:00 UTC · insights 22:00 UTC · health 23:00 UTC",
     appUrl: appBaseUrl(),
   });
 }

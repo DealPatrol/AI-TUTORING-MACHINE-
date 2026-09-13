@@ -1,3 +1,4 @@
+import { generateDailyLesson } from "@/lib/daily-generator";
 // Daily generator — creates at least ONE Ready feed graphic.
 // Uses Gemini for copy + image (no Claude required). Retries on 429.
 // Optional Veo video attached when available. Never requires Sequence/Type fields.
@@ -27,6 +28,7 @@ import { recordPipelineStatus } from "@/lib/pipeline-status";
 export const maxDuration = 180;
 
 export async function GET(request) {
+  if (process.env.CONTENT_MODE !== "ai") return generateDailyLesson(request, "generate");
   if (!checkCronAuth(request)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
