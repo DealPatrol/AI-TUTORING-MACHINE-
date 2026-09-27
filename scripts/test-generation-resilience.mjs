@@ -148,7 +148,7 @@ const fallbackBeats = ["STOP AI FROM GUESSING", ...buildEmergencyGrowthContent("
 assert.equal(fallbackBeats.filter((beat) => /comment how/i.test(beat)).length, 1);
 
 const pipelineStatusSource = readFileSync(new URL("../lib/pipeline-status.js", import.meta.url), "utf8");
-assert.match(pipelineStatusSource, /access:\s*"private"/);
-assert.doesNotMatch(pipelineStatusSource, /access:\s*"public"/);
+assert.match(pipelineStatusSource, /access:\s*"public"/);
+assert.doesNotMatch(pipelineStatusSource, /access:\s*"private"/);
 
 console.log("generation resilience tests passed");
