@@ -8,6 +8,8 @@ import {
   rewriteJson,
 } from "../lib/helpers.js";
 import { buildEmergencyGrowthContent } from "../lib/growth.js";
+import { readFileSync } from "node:fs";
+import { isPipelineFailure, pipelineFailureWarning } from "../lib/pipeline-status.js";
 
 process.env.GEMINI_API_KEY = "test-key";
 process.env.GEMINI_TEXT_MODELS = "gemini-3.5-flash-lite";
@@ -117,5 +119,36 @@ await likeIgComment({
 });
 assert.match(likeRequest.url, /\/ig-user-123\/likes$/);
 assert.equal(likeRequest.body.comment_id, "comment-456");
+
+assert.equal(
+  isPipelineFailure({ outcome: "skipped", error: "No Ready feed or carousel items" }),
+  false
+);
+assert.equal(
+  isPipelineFailure({ outcome: "queued-fallback", error: "Veo failed" }),
+  false
+);
+assert.equal(
+  isPipelineFailure({ outcome: "failed", error: "Gemini rewrite failed" }),
+  true
+);
+assert.equal(
+  pipelineFailureWarning({
+    operation: "generate",
+    outcome: "failed",
+    recordedAt: "2026-09-04T10:00:00.000Z",
+    error: "Gemini rewrite failed",
+  }),
+  "Last generate failed at 2026-09-04T10:00:00.000Z: Gemini rewrite failed"
+);
+
+const fallbackBeats = ["STOP AI FROM GUESSING", ...buildEmergencyGrowthContent("reel").beats]
+  .filter(Boolean)
+  .slice(0, 6);
+assert.equal(fallbackBeats.filter((beat) => /comment how/i.test(beat)).length, 1);
+
+const pipelineStatusSource = readFileSync(new URL("../lib/pipeline-status.js", import.meta.url), "utf8");
+assert.match(pipelineStatusSource, /access:\s*"private"/);
+assert.doesNotMatch(pipelineStatusSource, /access:\s*"public"/);
 
 console.log("generation resilience tests passed");

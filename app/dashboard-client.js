@@ -380,7 +380,11 @@ export default function DashboardClient() {
       {/* System Status */}
       <div className="setup-section">
         <h3>
-          {data?.warnings?.length ? "⚠ Pipeline needs attention" : "✅ Pipeline healthy"}
+          {data?.failed?.length ||
+          data?.generationIssues?.length ||
+          Object.values(data?.pipelineStatuses || {}).some((status) => status.outcome === "failed")
+            ? "⚠ Pipeline needs attention"
+            : "✅ Pipeline healthy"}
         </h3>
         <p>
           Connected to Instagram <strong>@unlocking__ai</strong>. Environment variables can be

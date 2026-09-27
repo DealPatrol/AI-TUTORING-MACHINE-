@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { airtableList, getTipDayNumber, appBaseUrl } from "@/lib/helpers";
 import { loadGrowthHistory, summarizeGrowth, buildGrowthRecommendations } from "@/lib/growth-stats";
-import { loadPipelineStatuses } from "@/lib/pipeline-status";
+import { loadPipelineStatuses, pipelineFailureWarning } from "@/lib/pipeline-status";
 
 export const dynamic = "force-dynamic";
 
@@ -73,11 +73,8 @@ export async function GET() {
   const history = await loadGrowthHistory();
   const pipelineStatuses = await loadPipelineStatuses();
   for (const status of Object.values(pipelineStatuses)) {
-    if (status.error) {
-      warnings.push(
-        `Last ${status.operation} ${status.outcome} at ${status.recordedAt}: ${status.error}`
-      );
-    }
+    const warning = pipelineFailureWarning(status);
+    if (warning) warnings.push(warning);
   }
   const summary = summarizeGrowth(history, topPosted);
   const recommendations = buildGrowthRecommendations({
