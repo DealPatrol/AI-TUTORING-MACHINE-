@@ -85,8 +85,8 @@ export default function DashboardClient() {
       <div className="dashboard-header">
         <h1>AI Tutor Machine</h1>
         <p>
-          Growth engine · Day {data?.tipDay || data?.stats?.tipDay || 1} streak · Daily AI lessons ·
-          HOW playbooks · Comment replies · Recycle + recap
+          3 Reels a day · text-on-screen · 8am / noon / 7pm CT · Day{" "}
+          {data?.tipDay || data?.stats?.tipDay || 1}
         </p>
         {data?.stats && (
           <div className="item-meta" style={{ marginTop: "1rem" }}>
@@ -217,7 +217,7 @@ export default function DashboardClient() {
           onClick={() => triggerCron("generate")}
           disabled={triggering.generate}
         >
-          {triggering.generate ? "🔄 Running..." : "✨ Trigger Generate"}
+          {triggering.generate ? "🔄 Running..." : "✨ Generate 3 Reels"}
         </button>
         <button
           className="control-btn btn-post"
@@ -245,7 +245,7 @@ export default function DashboardClient() {
         </button>
         {[
           ["research", "Research", "#6366f1"],
-          ["generate", "Generate Daily Lesson", "#8b5cf6"],
+          ["generate", "Generate 3 Reels", "#8b5cf6"],
           ["generate-reel", "Generate (AI mode / lesson)", "#db2777"],
           ["generate-carousel", "Generate Carousel", "#059669"],
           ["post", "Post Feed/Carousel", "#ec4899"],
@@ -286,11 +286,11 @@ export default function DashboardClient() {
             {!data?.queue || data.queue.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">📭</div>
-                <p>Queue is empty. Run Generate, Recycle, or Recap to add posts.</p>
+                <p>Queue is empty. Run Generate 3 Reels to fill the 8am / noon / 7pm CT slots.</p>
               </div>
             ) : (
               data.queue.map((post) => {
-                const times = { 1: "12:00 PM UTC", 2: "2:00 PM UTC", 3: "4:00 PM UTC" };
+                const times = { 1: "8:00 AM CT", 2: "12:00 PM CT", 3: "7:00 PM CT" };
                 const sequence = post.sequence || post.fields?.Sequence || "?";
                 return (
                   <div key={post.id} className="item">
@@ -300,7 +300,8 @@ export default function DashboardClient() {
                     </div>
                     <div className="item-meta">
                       <span className="status-badge status-ready">{post.status}</span>
-                      <span>Sequence: {sequence}</span>
+                      {typeBadge(post.type)}
+                      <span>{times[sequence] || `slot ${sequence}`}</span>
                     </div>
                     {post.imageUrl && (
                       <img src={post.imageUrl} alt={post.hook} className="item-image" />
@@ -312,7 +313,7 @@ export default function DashboardClient() {
             )}
           </div>
           <div className="section-footer">
-            Auto-posts: one lesson daily at 17:00 UTC · insights at 22:00 UTC
+            Auto-posts 3 Reels: 13:00, 17:00, and 00:00 UTC (8am / noon / 7pm CT)
           </div>
         </div>
 
@@ -399,11 +400,12 @@ export default function DashboardClient() {
           <li><code>IG_USER_ID</code> - Check in project settings</li>
         </ul>
         <p>
-          <strong>Daily schedule (UTC):</strong> lesson 11:00 · publish 17:00 · insights 22:00 · health 23:00.
+          <strong>Growth schedule (UTC):</strong> generate 3 Reels at 11:00 · post 13:00 / 17:00 / 00:00
+          (8am / noon / 7pm CT) · engage 18:00 & 21:00 · insights 22:00 · health 23:00.
         </p>
         <p>
-          <strong>After deploying a fix:</strong> Trigger Generate → confirm a Ready item appears →
-          Post Feed/Carousel. Curated mode works without AI credits; AI video mode requires provider credits.
+          <strong>After deploy:</strong> Generate 3 Reels → confirm Video URLs in the queue → Post Reel.
+          Text-on-screen Reels need no Veo or image-model credits.
         </p>
       </div>
       {Object.keys(data?.pipelineStatuses || {}).length > 0 && (
@@ -465,9 +467,9 @@ export default function DashboardClient() {
       <div className="setup-section">
         <h3>Growth engine</h3>
         <p>
-          One useful five-slide lesson each day, with a copyable prompt and an accuracy check.
-          The starter library rotates through 14 topics. Track saves, reach and follower changes;
-          growth is measured, never guaranteed. Automatic comment replies are not scheduled.
+          Three text-on-screen Reels a day. Instagram shows Reels to people who do not follow you
+          yet; carousels mostly stay inside the current audience. Each Reel is a stealable prompt
+          with a check. Comment HOW still gets a private playbook. Growth is measured, never guaranteed.
         </p>
       </div>
     </div>

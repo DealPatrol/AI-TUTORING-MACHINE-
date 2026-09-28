@@ -50,9 +50,12 @@ export async function GET() {
   const hoursSinceLastPost =
     latestPostedTime == null ? null : Math.floor((Date.now() - latestPostedTime) / 3600000);
 
-  if (winners.length < 3) warnings.push(`Low winners (${winners.length}) — run research`);
-  if (process.env.CONTENT_MODE === "ai" && readyReels === 0) warnings.push("No Ready Reel (optional in curated mode)");
-  if (readyFeed + readyCarousels === 0) warnings.push("No Ready feed/carousel for 17:00 UTC");
+  if (winners.length < 3 && process.env.CONTENT_MODE === "ai") {
+    warnings.push(`Low winners (${winners.length}) — run research`);
+  }
+  if (readyReels < 3) {
+    warnings.push(`Only ${readyReels} Ready Reel(s) — need 3 for 8am / noon / 7pm CT`);
+  }
   if (generationIssues.length) warnings.push(`${generationIssues.length} Ready item(s) used a generation fallback`);
   if (failed.length) warnings.push(`${failed.length} failed queue item(s)`);
 

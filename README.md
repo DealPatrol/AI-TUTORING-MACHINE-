@@ -65,7 +65,7 @@ curl -H "Authorization: Bearer YOUR_CRON_SECRET" https://your-app.vercel.app/api
 
 | Feature | Why it helps | Schedule |
 |--------|----------------|----------|
-| **Daily Reels** | Reels get the widest non-follower reach | Generate 8:00 UTC · Post **18:00 UTC daily** |
+| **3 text Reels / day** | Reels are almost the only way non-followers see you | Generate 11:00 · Post 13:00 / 17:00 / 00:00 UTC |
 | **Veo fallback** | Never skip a day if video gen fails | Auto → carousel same day |
 | **Optional Day N label** | Keeps continuity without weakening the main hook | Tiny metadata only |
 | **TIP comment replies** | Makes engagement CTA real → more comments | 19:00 & 21:00 UTC |
@@ -110,18 +110,11 @@ After deploying a fix:
 
 | Path | When (UTC) |
 |------|------------|
-| `/api/cron/research` | Mon 06:00 |
-| `/api/cron/generate` | Daily 07:00 |
-| `/api/cron/generate-reel` | Daily 08:00 |
-| `/api/cron/generate-carousel` | Tue/Thu/Sat 09:00 |
-| `/api/cron/recycle` | Mon 10:00 |
-| `/api/cron/recap` | Sun 10:00 |
-| `/api/cron/health` | Daily 11:00 |
-| `/api/cron/post` | Daily 15:00 |
-| `/api/cron/post-reel` | Daily 18:00 |
-| `/api/cron/engage` | Daily 19:00 & 21:00 |
-| `/api/cron/boost` | Daily 20:00 |
+| `/api/cron/generate` | Daily 11:00 — queue 3 text Reels |
+| `/api/cron/post-reel` | Daily 13:00, 17:00, 00:00 — 8am / noon / 7pm CT |
+| `/api/cron/engage` | Daily 18:00 & 21:00 |
 | `/api/cron/insights` | Daily 22:00 |
+| `/api/cron/health` | Daily 23:00 |
 
 ---
 
