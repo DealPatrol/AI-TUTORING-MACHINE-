@@ -10,13 +10,14 @@ import {
   postIgFirstComment,
   createIgImageContainer,
   createIgCarouselContainer,
+  createIgReelContainer,
+  extractQueueVideo,
   listReadyQueue,
   publishIgStory,
   safeAirtableUpdate,
   markQueueFailed,
   cleanQueueCaption,
   getIgCredentials,
-  igGraphBase,
 } from "@/lib/helpers";
 import { recordPipelineStatus } from "@/lib/pipeline-status";
 
@@ -31,7 +32,10 @@ export async function GET(request) {
   let published = null;
   let publishAttempted = false;
   try {
-    let queue = await listReadyQueue("Carousel");
+    let queue = await listReadyQueue("Reel");
+    if (queue.length === 0) {
+      queue = await listReadyQueue("Carousel");
+    }
     if (queue.length === 0) {
       queue = await listReadyQueue("Feed");
     }
@@ -42,22 +46,37 @@ export async function GET(request) {
       return Response.json({
         ok: true,
         skipped: true,
-        message: "Queue is empty for feed/carousel",
+        message: "Queue is empty for reel/feed/carousel",
       });
     }
 
     post = queue[0];
-    // Infer type when Airtable has no Type field
+    // Infer type when Airtable has no Type field. Reels win discovery.
     let type = post.fields.Type;
-    if (!type) {
+    if (extractQueueVideo(post.fields)) type = "Reel";
+    else if (!type) {
       if (post.fields["Slide URLs"]) type = "Carousel";
       else type = "Feed";
     }
     const retryCount = post.fields["Retry Count"] || 0;
     const { token, igUserId } = getIgCredentials();
     let container;
+    const videoUrl = extractQueueVideo(post.fields);
 
-    if (type === "Carousel") {
+    if (type === "Reel") {
+      if (!videoUrl) {
+        await markQueueFailed(post.id, "Reel missing Video URL", { retryCount });
+        return Response.json({ error: `Record ${post.id} has no Video URL, skipping.` }, { status: 400 });
+      }
+      container = await createIgReelContainer({
+        igUserId,
+        token,
+        videoUrl,
+        caption: cleanQueueCaption(post.fields.Caption),
+        coverUrl: post.fields["Cover URL"] || post.fields["Image URL"] || undefined,
+        shareToFeed: true,
+      });
+    } else if (type === "Carousel") {
       let slides = [];
       try {
         slides = JSON.parse(post.fields["Slide URLs"] || "[]");
@@ -102,28 +121,11 @@ export async function GET(request) {
       });
     }
 
-    // 2b. Wait for Instagram to finish processing the media before publishing.
-    // Instagram downloads/processes the image asynchronously; publishing too
-    // early fails with code 9007 "media is not ready for publishing".
-    let ready = false;
-    for (let attempt = 0; attempt < 10; attempt++) {
-      await new Promise((r) => setTimeout(r, 3000)); // wait 3s between checks
-      const statusRes = await fetch(
-        `${igGraphBase()}/${container.id}?fields=status_code,status&access_token=${token}`
-      );
-      const status = await statusRes.json();
-      if (status.status_code === "FINISHED") {
-        ready = true;
-        break;
-      }
-      if (status.status_code === "ERROR" || status.status_code === "EXPIRED") {
-        throw new Error(`Media processing ${status.status_code}: ${JSON.stringify(status)}`);
-      }
-      // otherwise IN_PROGRESS — keep polling
-    }
-    if (!ready) {
-      throw new Error("Media did not finish processing in time (still IN_PROGRESS after ~30s)");
-    }
+    // Reels take longer to process than stills. Fail closed if IG never finishes.
+    await waitForIgContainer(container.id, token, {
+      attempts: type === "Reel" ? 40 : 15,
+      delayMs: type === "Reel" ? 4000 : 2000,
+    });
 
     // 3. Publish it after Instagram finishes processing the container.
     // Persist an uncertainty marker before the external side effect. If the

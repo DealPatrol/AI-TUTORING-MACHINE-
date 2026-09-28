@@ -5,6 +5,8 @@ const nextConfig = {
     // discover the binary through normal import tracing. Include it explicitly
     // in the generate-reel serverless function bundle.
     outputFileTracingIncludes: {
+      "/api/cron/generate": ["./node_modules/ffmpeg-static/ffmpeg"],
+      "/api/trigger/generate": ["./node_modules/ffmpeg-static/ffmpeg"],
       "/api/cron/generate-reel": ["./node_modules/ffmpeg-static/ffmpeg"],
       "/api/trigger/generate-reel": ["./node_modules/ffmpeg-static/ffmpeg"],
     },

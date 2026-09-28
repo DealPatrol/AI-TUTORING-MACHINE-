@@ -60,7 +60,7 @@ const recs = buildGrowthRecommendations({
 });
 assert.ok(recs.some((r) => r.includes("+42 followers")));
 assert.ok(recs.some((r) => r.includes("Reels are your top format")));
-assert.ok(recs.some((r) => r.includes("No Ready Reel")));
+assert.ok(recs.some((r) => r.includes("8am / noon / 7pm")));
 
 const winner = pickRecycleCandidate(
   [daysAgo(5, { reach: 999, hook: "too new" }), daysAgo(25, { reach: 80, hook: "proven" })],

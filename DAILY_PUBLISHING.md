@@ -1,24 +1,31 @@
-# Daily Instagram lessons
+# Daily Instagram Reels
 
-The default production path creates one original five-slide carousel per day without Gemini, Claude, Veo, or image-generation credits. A 14-topic curated starter library includes concrete instructions and accuracy checks. It rotates every two weeks; expand the library and review performance to keep the account fresh. It does not guarantee followers or dynamically research news.
+The default production path creates **three original text-on-screen Reels per day** without Gemini, Claude, Veo, or image-generation credits. Instagram distributes Reels to non-followers. A single daily carousel does not.
 
-Schedule (UTC): generate 11:00, publish 17:00, insights 22:00, health 23:00. In Alabama, publishing is noon during daylight saving time and 11am in winter.
+Each Reel is five hard-cut 9:16 frames (~10.5 seconds) with a punchy hook, a copyable prompt, and an accuracy check. The bank has 30 unique Reels (10 days × 3). It then rotates. Expand the bank and kill weak hooks after you see plays.
 
-Use **Generate Daily Lesson**, inspect the queued images and caption, then **Post Feed/Carousel** for a manual run. Generation skips a matching ready or recently published lesson. Do not trigger the publisher concurrently: Airtable has no atomic compare-and-swap and this change does not implement a distributed lock.
+## Schedule (UTC)
 
-## Fixes
+| Job | When | Alabama (CT, daylight) |
+|-----|------|------------------------|
+| Generate 3 Reels | 11:00 | 6:00 AM |
+| Post Reel #1 | 13:00 | 8:00 AM |
+| Post Reel #2 | 17:00 | 12:00 PM |
+| Post Reel #3 | 00:00 | 7:00 PM |
+| Engage comments | 18:00 & 21:00 | 1:00 PM & 4:00 PM |
+| Insights | 22:00 | 5:00 PM |
+| Health | 23:00 | 6:00 PM |
 
-- Real typeset 1080×1350 JPEG images. No paid image API and no blank placeholder cards in the daily path.
-- Compatibility envelope in Airtable Caption preserves carousel slides, media IDs, and metrics when optional columns are absent. All publication paths strip the envelope before Instagram receives a caption.
-- Existing Queue needs Hook, Caption (long text), Status (Ready/Posted), Image URL and Posted At. No schema editing credentials required.
-- Publication state persists before comments/Stories. A `[PUBLISHING]` row is excluded from retry after an ambiguous external response. Inspect Instagram, then use Airtable to reconcile it: mark Posted if present; if definitely absent, remove the marker from both Last Error and the encoded Caption envelope before requeueing. Never blindly retry an uncertain publish.
-- Dashboard fetches the newest posts rather than arbitrary first records. Media IDs and engagement counts survive missing optional columns, allowing subsequent insights collection.
-- Cron authentication fails closed when the secret is missing.
+Use **Generate 3 Reels**, inspect the queued cover + caption, then **Post Reel**. Generation skips a matching ready or recently published hook.
+
+## Why this changed
+
+Carousels are save-magnets for people who already follow you. They almost never create new followers. Reels are the discovery surface. Three short text Reels a day is the fastest lever this account can pull without paid video models.
 
 ## AI mode
 
-CONTENT_MODE=ai retains the older provider-based generation paths. These require paid provider credits; the September 13 production logs report depleted Google and Anthropic balances. That legacy mode still requires separate visual QA and retains its older image fallback behavior; do not enable it expecting the curated quality guarantee. Reels are not part of the default schedule.
+`CONTENT_MODE=ai` still uses the older Veo path. That needs paid credits. Do not enable it expecting the curated guarantee.
 
 ## Validation
 
-npm test covers growth calculations, provider failures, rendering every slide in the starter library, minimal Airtable schema creation/update roundtrips, carousel routing, metadata stripping, uncertain-publication exclusion, and missing-secret rejection. npm run build validates the Next.js production bundle. Local checks use mocked provider responses; a real deployment and Instagram publication must be checked separately.
+`npm test` covers reel-frame rendering, FFmpeg MP4 output, hook uniqueness, and the existing Airtable/auth checks. `npm run build` validates the Next.js bundle.
