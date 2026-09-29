@@ -5,7 +5,6 @@ import { put } from "@vercel/blob";
 import {
   checkCronAuth,
   airtableCreateQueue,
-  generateGeminiImageWithFallback,
   getTipDayNumber,
   rewriteJson,
   listPostedQueue,
@@ -15,8 +14,8 @@ import {
   recycleGrowthPrompt,
   buildEmergencyGrowthContent,
   buildFirstComment,
-  storyOverlayPrompt,
 } from "@/lib/growth";
+import { renderCaptionSlide } from "@/lib/slide-render";
 import { pickRecycleCandidate } from "@/lib/growth-stats";
 
 export const maxDuration = 180;
@@ -69,26 +68,27 @@ export async function GET(request) {
     }
 
     const stamp = Date.now();
-    const image = await generateGeminiImageWithFallback(
-      `Create a clean modern Instagram graphic, square 1:1.
-Soft cream background, bold dark charcoal headline, small friendly robot mascot,
-flat design, generous whitespace.
-Headline (render exactly): "${content.hook}"
-Subtext (render exactly): "${content.subtext || ""}"
-Tiny label: "Day ${dayNumber}"`
-    );
-    const blob = await put(`posts/recycle-${stamp}.png`, image.buffer, {
+    const image = await renderCaptionSlide({
+      headline: content.hook,
+      body: content.subtext || "",
+      label: dayNumber ? `DAY ${dayNumber}` : "AI YOU CAN USE",
+    });
+    const blob = await put(`posts/recycle-${stamp}.jpg`, image, {
       access: "public",
-      contentType: "image/png",
+      contentType: "image/jpeg",
     });
 
-    const story = await generateGeminiImageWithFallback(
-      storyOverlayPrompt(content.hook, content.storyText, dayNumber),
-      { width: 1080, height: 1920 }
-    );
-    const storyBlob = await put(`stories/recycle-${stamp}.png`, story.buffer, {
+    const story = await renderCaptionSlide({
+      headline: content.storyText || content.hook,
+      body: "Open the post · Comment HOW",
+      label: dayNumber ? `DAY ${dayNumber}` : "NEW TIP",
+      footer: "Follow @unlocking__ai",
+      width: 1080,
+      height: 1920,
+    });
+    const storyBlob = await put(`stories/recycle-${stamp}.jpg`, story, {
       access: "public",
-      contentType: "image/png",
+      contentType: "image/jpeg",
     });
 
     const sourceUrl = `recycle:${candidate.id}`;
@@ -104,10 +104,8 @@ Tiny label: "Day ${dayNumber}"`
       "Source URL": sourceUrl,
       "Day Number": dayNumber,
       "Bonus Prompt": content.bonusPrompt || "",
-      "Fallback Used": Boolean(copyError || image.fallback || story.fallback),
-      "Last Error":
-        [copyError, image.error, story.error].filter(Boolean).join(" | ").slice(0, 1000) ||
-        undefined,
+      "Fallback Used": Boolean(copyError),
+      "Last Error": copyError ? copyError.slice(0, 1000) : undefined,
     });
 
     return Response.json({

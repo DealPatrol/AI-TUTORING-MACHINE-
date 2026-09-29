@@ -3,13 +3,12 @@
 import { put } from "@vercel/blob";
 import {
   checkCronAuth,
-  generateGeminiImage,
   getIgCredentials,
   listPostedQueue,
   publishIgStory,
   safeAirtableUpdate,
 } from "@/lib/helpers";
-import { boostStoryPrompt } from "@/lib/growth";
+import { renderCaptionSlide } from "@/lib/slide-render";
 
 export const maxDuration = 120;
 
@@ -47,12 +46,17 @@ export async function GET(request) {
     for (const row of targets.slice(0, 3)) {
       let imageUrl = row.fields["Story Image URL"];
       if (!imageUrl) {
-        const graphic = await generateGeminiImage(
-          boostStoryPrompt(row.fields.Hook, row.fields["Day Number"])
-        );
-        const blob = await put(`stories/boost-${Date.now()}-${row.id}.png`, graphic.buffer, {
+        const graphic = await renderCaptionSlide({
+          headline: row.fields.Hook || "Today's AI tip",
+          body: "Comment HOW for the playbook",
+          label: row.fields["Day Number"] ? `DAY ${row.fields["Day Number"]}` : "TODAY",
+          footer: "Save the prompt for later",
+          width: 1080,
+          height: 1920,
+        });
+        const blob = await put(`stories/boost-${Date.now()}-${row.id}.jpg`, graphic, {
           access: "public",
-          contentType: "image/png",
+          contentType: "image/jpeg",
         });
         imageUrl = blob.url;
       }

@@ -25,6 +25,7 @@ for (let i = 0; i < DAILY_REEL_LESSON_COUNT; i++) {
     assert.equal(info.format, "jpeg");
     assert.equal(info.width, REEL_WIDTH);
     assert.equal(info.height, REEL_HEIGHT);
+    if (b === 0) await assertReadableType(jpeg, lesson.hook);
   }
 }
 assert.equal(hooks.size, DAILY_REEL_LESSON_COUNT);
@@ -45,3 +46,16 @@ await writeFile("/tmp/text-reel-cover.jpg", reel.cover);
 console.log(
   `text-reel tests passed: ${DAILY_REEL_LESSON_COUNT} unique hooks, ${DAILY_REEL_LESSON_COUNT * 5} frames, one ${reel.video.length}-byte MP4`
 );
+
+async function assertReadableType(jpeg, label) {
+  const { data, info } = await sharp(jpeg).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let light = 0;
+  const pixels = info.width * info.height;
+  for (let i = 0; i < data.length; i += info.channels) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    if (r > 220 && g > 220 && b > 220) light += 1;
+  }
+  assert.ok(light > 2500 && light < pixels * 0.45, `${label} rendered ${light} light pixels`);
+}

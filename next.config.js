@@ -1,15 +1,38 @@
 /** @type {import("next").NextConfig} */
+const ffmpeg = ["./node_modules/ffmpeg-static/ffmpeg"];
+const fonts = ["./lib/fonts/Inter-Regular.ttf", "./lib/fonts/Inter-Bold.ttf"];
+const slideRoutes = [
+  "/api/cron/generate",
+  "/api/trigger/generate",
+  "/api/cron/generate-carousel",
+  "/api/trigger/generate-carousel",
+  "/api/cron/generate-reel",
+  "/api/trigger/generate-reel",
+  "/api/cron/recap",
+  "/api/trigger/recap",
+  "/api/cron/recycle",
+  "/api/trigger/recycle",
+  "/api/cron/boost",
+  "/api/trigger/boost",
+];
+const videoRoutes = new Set([
+  "/api/cron/generate",
+  "/api/trigger/generate",
+  "/api/cron/generate-reel",
+  "/api/trigger/generate-reel",
+]);
+
+const outputFileTracingIncludes = {};
+for (const route of slideRoutes) {
+  outputFileTracingIncludes[route] = videoRoutes.has(route) ? [...ffmpeg, ...fonts] : fonts;
+}
+
 const nextConfig = {
   experimental: {
-    // ffmpeg-static resolves its executable path at runtime, so Next.js cannot
-    // discover the binary through normal import tracing. Include it explicitly
-    // in the generate-reel serverless function bundle.
-    outputFileTracingIncludes: {
-      "/api/cron/generate": ["./node_modules/ffmpeg-static/ffmpeg"],
-      "/api/trigger/generate": ["./node_modules/ffmpeg-static/ffmpeg"],
-      "/api/cron/generate-reel": ["./node_modules/ffmpeg-static/ffmpeg"],
-      "/api/trigger/generate-reel": ["./node_modules/ffmpeg-static/ffmpeg"],
-    },
+    // ffmpeg-static and the bundled Inter files are read from disk at runtime.
+    // Next cannot discover either through import tracing, so include them in
+    // every function that typesets a slide or stitches a Reel.
+    outputFileTracingIncludes,
   },
 };
 
