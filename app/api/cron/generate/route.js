@@ -1,13 +1,12 @@
 import { generateDailyLesson } from "@/lib/daily-generator";
 // Daily generator — creates at least ONE Ready feed graphic.
-// Uses Gemini for copy + image (no Claude required). Retries on 429.
+// Copy can come from Gemini. The graphic itself is typeset, never drawn by an image model.
 // Optional Veo video attached when available. Never requires Sequence/Type fields.
 
 import { put } from "@vercel/blob";
 import {
   checkCronAuth,
   airtableCreateQueue,
-  generateGeminiImageWithFallback,
   getTipDayNumber,
   claimNextWinner,
   markWinnerUsed,
@@ -20,9 +19,9 @@ import {
   feedGrowthPrompt,
   buildEmergencyGrowthContent,
   buildFirstComment,
-  storyOverlayPrompt,
   pickEvergreenTopic,
 } from "@/lib/growth";
+import { renderCaptionSlide } from "@/lib/slide-render";
 import { recordPipelineStatus } from "@/lib/pipeline-status";
 
 export const maxDuration = 180;
@@ -58,31 +57,31 @@ export async function GET(request) {
       content = buildEmergencyGrowthContent("feed");
     }
 
-    const image = await generateGeminiImageWithFallback(
-      `Create a clean modern Instagram graphic, square 1:1.
-Soft cream background, bold dark charcoal headline, small friendly robot mascot,
-flat design, generous whitespace.
-Headline (render exactly): "${content.hook}"
-Subtext (render exactly): "${content.subtext || ""}"
-Tiny label: "Day ${dayNumber}"`
-    );
+    const image = await renderCaptionSlide({
+      headline: content.hook,
+      body: content.subtext || "",
+      label: dayNumber ? `DAY ${dayNumber}` : "AI YOU CAN USE",
+    });
 
     const stamp = Date.now();
-    const blob = await put(`posts/${stamp}.png`, image.buffer, {
+    const blob = await put(`posts/${stamp}.jpg`, image, {
       access: "public",
-      contentType: "image/png",
+      contentType: "image/jpeg",
     });
 
-    let storyUrl = null;
-    const story = await generateGeminiImageWithFallback(
-      storyOverlayPrompt(content.hook, content.storyText, dayNumber),
-      { width: 1080, height: 1920 }
-    );
-    const storyBlob = await put(`stories/feed-${stamp}.png`, story.buffer, {
-      access: "public",
-      contentType: "image/png",
+    const story = await renderCaptionSlide({
+      headline: content.storyText || content.hook,
+      body: "Open the post · Comment HOW",
+      label: dayNumber ? `DAY ${dayNumber}` : "NEW TIP",
+      footer: "Follow @unlocking__ai",
+      width: 1080,
+      height: 1920,
     });
-    storyUrl = storyBlob.url;
+    const storyBlob = await put(`stories/feed-${stamp}.jpg`, story, {
+      access: "public",
+      contentType: "image/jpeg",
+    });
+    const storyUrl = storyBlob.url;
 
     // Optional Veo reel — never block the feed post if this fails
     let videoUrl = null;
@@ -124,10 +123,8 @@ One complete energetic teacher voiceover sentence of no more than 15 words, subt
       "Source URL": winner?.fields?.["Post URL"] || "",
       "Day Number": dayNumber,
       "Bonus Prompt": content.bonusPrompt || "",
-      "Fallback Used": Boolean(copyError || image.fallback || story.fallback),
-      "Last Error":
-        [copyError, image.error, story.error].filter(Boolean).join(" | ").slice(0, 1000) ||
-        undefined,
+      "Fallback Used": Boolean(copyError),
+      "Last Error": copyError ? copyError.slice(0, 1000) : undefined,
       Sequence: 1,
     });
 
@@ -138,7 +135,7 @@ One complete energetic teacher voiceover sentence of no more than 15 words, subt
       details: {
         hook: content.hook,
         type: videoUrl ? "Reel" : "Feed",
-        fallbackUsed: Boolean(copyError || image.fallback || story.fallback),
+        fallbackUsed: Boolean(copyError),
       },
     });
     return Response.json({

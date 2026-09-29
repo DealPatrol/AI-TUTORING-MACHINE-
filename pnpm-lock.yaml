@@ -20,6 +20,9 @@ importers:
       next:
         specifier: ^14.2.0
         version: 14.2.35(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      opentype.js:
+        specifier: ^2.0.0
+        version: 2.0.0
       react:
         specifier: ^18.3.0
         version: 18.3.1
@@ -28,7 +31,7 @@ importers:
         version: 18.3.1(react@18.3.1)
       sharp:
         specifier: ^0.35.4
-        version: 0.35.4(@types/node@10.17.60)
+        version: 0.35.4
 
 packages:
 
@@ -418,6 +421,10 @@ packages:
         optional: true
       sass:
         optional: true
+
+  opentype.js@2.0.0:
+    resolution: {integrity: sha512-kCyjv6xdDY1W/jLWZ/L3QhhTlKUqDZMQ5+Jdlw12b3dXkKNpYBqqlMMj0YDQPShWFTMwgZI1hG14kN3XUDSg/A==}
+    hasBin: true
 
   parse-cache-control@1.0.1:
     resolution: {integrity: sha512-60zvsJReQPX5/QP0Kzfd/VrpjScIQ7SHBW6bFCYfEP+fp0Eppr1SHhIO5nd1PjZtvclzSzES9D/p5nFJurwfWg==}
@@ -823,6 +830,8 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
+  opentype.js@2.0.0: {}
+
   parse-cache-control@1.0.1: {}
 
   picocolors@1.1.1: {}
@@ -861,7 +870,7 @@ snapshots:
 
   semver@7.8.5: {}
 
-  sharp@0.35.4(@types/node@10.17.60):
+  sharp@0.35.4:
     dependencies:
       '@img/colour': 1.1.0
       detect-libc: 2.1.2
@@ -892,7 +901,6 @@ snapshots:
       '@img/sharp-win32-arm64': 0.35.4
       '@img/sharp-win32-ia32': 0.35.4
       '@img/sharp-win32-x64': 0.35.4
-      '@types/node': 10.17.60
 
   source-map-js@1.2.1: {}
 

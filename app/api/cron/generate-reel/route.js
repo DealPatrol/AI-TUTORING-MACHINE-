@@ -7,7 +7,6 @@ import {
   checkCronAuth,
   airtableCreateQueue,
   rewriteJson,
-  generateGeminiImageWithFallback,
   generateVeoReelWithFallback,
   stitchVideoBuffers,
   getTipDayNumber,
@@ -20,9 +19,9 @@ import {
   reelGrowthPrompt,
   buildEmergencyGrowthContent,
   buildFirstComment,
-  storyOverlayPrompt,
   pickEvergreenTopic,
 } from "@/lib/growth";
+import { renderCaptionSlide } from "@/lib/slide-render";
 import { recordPipelineStatus } from "@/lib/pipeline-status";
 
 // 300s is the safe serverless ceiling. Veo generation is internally capped by
@@ -69,31 +68,30 @@ export async function GET(request) {
     const stamp = Date.now();
     const fallbackErrors = copyError ? [copyError] : [];
 
-    const cover = await generateGeminiImageWithFallback(
-      `Create a vertical Instagram Reel cover, 9:16 portrait.
-Style: original flat graphic design, huge bold sans-serif headline, black and
-white with one warm red accent, strong hierarchy, generous spacing, high
-contrast, readable on mobile in one second. No photo, celebrity or influencer
-likeness, trademarked logo, brand mashup, or copied social account styling.
-Big headline text (render exactly): "${content.coverText || content.hook}"
-Tiny label at top: "Day ${dayNumber}"
-Tiny label at bottom: "Copy it · save it · use it"`,
-      { width: 1080, height: 1920 }
-    );
-    if (cover.error) fallbackErrors.push(`cover: ${cover.error}`);
-    const coverBlob = await put(`reels/cover-${stamp}.png`, cover.buffer, {
+    const cover = await renderCaptionSlide({
+      headline: content.coverText || content.hook,
+      body: "Copy it · save it · use it",
+      label: dayNumber ? `DAY ${dayNumber}` : "TODAY",
+      footer: "Comment HOW for the playbook",
+      width: 1080,
+      height: 1920,
+    });
+    const coverBlob = await put(`reels/cover-${stamp}.jpg`, cover, {
       access: "public",
-      contentType: "image/png",
+      contentType: "image/jpeg",
     });
 
-    const story = await generateGeminiImageWithFallback(
-      storyOverlayPrompt(content.hook, content.storyText || content.coverText, dayNumber),
-      { width: 1080, height: 1920 }
-    );
-    if (story.error) fallbackErrors.push(`story: ${story.error}`);
-    const storyBlob = await put(`stories/reel-${stamp}.png`, story.buffer, {
+    const story = await renderCaptionSlide({
+      headline: content.storyText || content.coverText || content.hook,
+      body: "Open the post · Comment HOW",
+      label: dayNumber ? `DAY ${dayNumber}` : "NEW TIP",
+      footer: "Follow @unlocking__ai",
+      width: 1080,
+      height: 1920,
+    });
+    const storyBlob = await put(`stories/reel-${stamp}.jpg`, story, {
       access: "public",
-      contentType: "image/png",
+      contentType: "image/jpeg",
     });
 
     const scenes = Array.isArray(content.visualScenes) ? content.visualScenes.filter(Boolean) : [];
@@ -214,19 +212,14 @@ Subtle upbeat music and realistic ambient sound. ${ending}`;
         .slice(0, 6);
       const slideUrls = [];
       for (let i = 0; i < beats.length; i++) {
-        const image = await generateGeminiImageWithFallback(
-          `Create a clean Instagram carousel slide, square 1:1.
-Style: original flat graphic design, huge bold sans-serif type, black and white
-with one warm red accent, strong hierarchy, high contrast, and generous spacing.
-No photos, people, celebrity or influencer likenesses, trademarked logos,
-brand mashups, or copied social account styling.
-Tiny metadata label: "Day ${dayNumber}". Slide ${i + 1}.
-Headline (render exactly): "${String(beats[i]).slice(0, 80)}"`
-        );
-        if (image.error) fallbackErrors.push(`fallback slide ${i + 1}: ${image.error}`);
-        const blob = await put(`reels/fallback-${stamp}-${i + 1}.png`, image.buffer, {
+        const image = await renderCaptionSlide({
+          headline: String(beats[i]).slice(0, 140),
+          label: `DAY ${dayNumber}  ·  ${i + 1}/${beats.length}`,
+          footer: i === beats.length - 1 ? "Comment HOW for the playbook" : "Swipe for the next step",
+        });
+        const blob = await put(`reels/fallback-${stamp}-${i + 1}.jpg`, image, {
           access: "public",
-          contentType: "image/png",
+          contentType: "image/jpeg",
         });
         slideUrls.push(blob.url);
       }

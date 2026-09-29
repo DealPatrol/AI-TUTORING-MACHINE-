@@ -6,7 +6,6 @@ import {
   checkCronAuth,
   airtableCreateQueue,
   rewriteJson,
-  generateGeminiImageWithFallback,
   getTipDayNumber,
   claimNextWinner,
   markWinnerUsed,
@@ -17,9 +16,9 @@ import {
   carouselGrowthPrompt,
   buildEmergencyGrowthContent,
   buildFirstComment,
-  storyOverlayPrompt,
   pickEvergreenTopic,
 } from "@/lib/growth";
+import { renderCaptionSlide } from "@/lib/slide-render";
 import { recordPipelineStatus } from "@/lib/pipeline-status";
 
 export const maxDuration = 300;
@@ -60,35 +59,30 @@ export async function GET(request) {
 
     for (let i = 0; i < slides.length; i++) {
       const slide = slides[i];
-      const image = await generateGeminiImageWithFallback(
-        `Create a clean Instagram carousel slide, square 1:1.
-Style: original flat graphic design, huge bold sans-serif type, black and white
-with one warm red accent, strong hierarchy, high contrast, and generous spacing.
-Use simple original geometric accents only. No photos, people, celebrity or
-influencer likenesses, trademarked logos, brand mashups, or copied social
-account styling.
-Tiny metadata label: "Day ${dayNumber}". Slide ${i + 1} of ${slides.length}.
-Headline (render exactly): "${slide.headline || ""}"
-Body text (render exactly): "${slide.body || ""}"
-${i === 0 ? 'Top-left small label: "SWIPE →"' : ""}
-${i === slides.length - 1 ? 'Bottom label: "Save this prompt · Comment HOW"' : ""}`
-      );
-      if (image.error) fallbackErrors.push(`slide ${i + 1}: ${image.error}`);
-      const blob = await put(`carousels/${stamp}-${i + 1}.png`, image.buffer, {
+      const image = await renderCaptionSlide({
+        headline: slide.headline || content.hook,
+        body: slide.body || "",
+        label: i === 0 ? `SWIPE  ·  ${i + 1}/${slides.length}` : `${i + 1} / ${slides.length}`,
+        footer: i === slides.length - 1 ? "Save this · Comment HOW" : "Swipe for the next step",
+      });
+      const blob = await put(`carousels/${stamp}-${i + 1}.jpg`, image, {
         access: "public",
-        contentType: "image/png",
+        contentType: "image/jpeg",
       });
       slideUrls.push(blob.url);
     }
 
-    const story = await generateGeminiImageWithFallback(
-      storyOverlayPrompt(content.hook, content.storyText, dayNumber),
-      { width: 1080, height: 1920 }
-    );
-    if (story.error) fallbackErrors.push(`story: ${story.error}`);
-    const storyBlob = await put(`stories/carousel-${stamp}.png`, story.buffer, {
+    const story = await renderCaptionSlide({
+      headline: content.storyText || content.hook,
+      body: "Open the post · Comment HOW",
+      label: dayNumber ? `DAY ${dayNumber}` : "NEW TIP",
+      footer: "Follow @unlocking__ai",
+      width: 1080,
+      height: 1920,
+    });
+    const storyBlob = await put(`stories/carousel-${stamp}.jpg`, story, {
       access: "public",
-      contentType: "image/png",
+      contentType: "image/jpeg",
     });
 
     const firstComment =
