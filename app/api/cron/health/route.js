@@ -8,7 +8,7 @@ import {
   getGeminiApiKey,
   igGraphBase,
 } from "@/lib/helpers";
-import { loadPipelineStatuses } from "@/lib/pipeline-status";
+import { loadPipelineStatuses, pipelineFailureWarning } from "@/lib/pipeline-status";
 
 export const maxDuration = 30;
 
@@ -136,11 +136,8 @@ export async function GET(request) {
 
   const pipelineStatuses = await loadPipelineStatuses();
   for (const status of Object.values(pipelineStatuses)) {
-    if (status.error) {
-      warnings.push(
-        `Last ${status.operation} ${status.outcome} at ${status.recordedAt}: ${status.error}`
-      );
-    }
+    const warning = pipelineFailureWarning(status);
+    if (warning) warnings.push(warning);
   }
 
   return Response.json({

@@ -209,11 +209,9 @@ Subtle upbeat music and realistic ambient sound. ${ending}`;
     } catch (veoErr) {
       console.error("Veo failed — queueing carousel fallback:", veoErr.message);
 
-      const beats = [
-        content.hook,
-        ...(Array.isArray(content.beats) ? content.beats : []),
-        "Comment HOW for the AI playbook",
-      ].slice(0, 6);
+      const beats = [content.hook, ...(Array.isArray(content.beats) ? content.beats : [])]
+        .filter(Boolean)
+        .slice(0, 6);
       const slideUrls = [];
       for (let i = 0; i < beats.length; i++) {
         const image = await generateGeminiImageWithFallback(
