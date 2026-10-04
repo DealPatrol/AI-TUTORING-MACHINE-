@@ -1,5 +1,10 @@
 /** @type {import("next").NextConfig} */
-const ffmpeg = ["./node_modules/ffmpeg-static/ffmpeg"];
+// pnpm symlinks node_modules/ffmpeg-static into .pnpm/; Node resolves the real
+// path at runtime, so trace the binary at both locations.
+const ffmpeg = [
+  "./node_modules/ffmpeg-static/ffmpeg",
+  "./node_modules/.pnpm/ffmpeg-static@*/node_modules/ffmpeg-static/ffmpeg",
+];
 const fonts = ["./lib/fonts/Inter-Regular.ttf", "./lib/fonts/Inter-Bold.ttf"];
 const slideRoutes = [
   "/api/cron/generate",
@@ -29,6 +34,9 @@ for (const route of slideRoutes) {
 
 const nextConfig = {
   experimental: {
+    // Keep ffmpeg-static as a runtime require so its __dirname-based binary path
+    // points at node_modules, not .next/server/chunks (spawn ENOENT otherwise).
+    serverComponentsExternalPackages: ["ffmpeg-static"],
     // ffmpeg-static and the bundled Inter files are read from disk at runtime.
     // Next cannot discover either through import tracing, so include them in
     // every function that typesets a slide or stitches a Reel.
