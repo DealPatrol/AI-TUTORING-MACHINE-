@@ -1,10 +1,13 @@
 /** @type {import("next").NextConfig} */
-// pnpm symlinks node_modules/ffmpeg-static into .pnpm/; Node resolves the real
-// path at runtime, so trace the binary at both locations.
-const ffmpeg = [
-  "./node_modules/ffmpeg-static/ffmpeg",
-  "./node_modules/.pnpm/ffmpeg-static@*/node_modules/ffmpeg-static/ffmpeg",
-];
+const { existsSync } = require("node:fs");
+const { join } = require("node:path");
+
+// pnpm symlinks node_modules/ffmpeg-static into .pnpm/ and Node resolves the
+// real path at runtime. Trace only the real file: Vercel rejects functions that
+// contain files inside a symlinked directory.
+const ffmpeg = existsSync(join(__dirname, "node_modules", ".pnpm"))
+  ? ["./node_modules/.pnpm/ffmpeg-static@*/node_modules/ffmpeg-static/ffmpeg"]
+  : ["./node_modules/ffmpeg-static/ffmpeg"];
 const fonts = ["./lib/fonts/Inter-Regular.ttf", "./lib/fonts/Inter-Bold.ttf"];
 const slideRoutes = [
   "/api/cron/generate",
