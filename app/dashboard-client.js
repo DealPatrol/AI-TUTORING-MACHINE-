@@ -109,7 +109,7 @@ export default function DashboardClient() {
                 {(data.growth.latest?.followers || 0).toLocaleString()}
               </div>
               <div className="growth-note">
-                @{data.growth.latest?.username || "unlocking__ai"}
+                @{data.growth.latest?.username || "getcashwithai"}
               </div>
             </div>
             <div className="growth-card">
@@ -388,7 +388,7 @@ export default function DashboardClient() {
             : "✅ Pipeline healthy"}
         </h3>
         <p>
-          Connected to Instagram <strong>@unlocking__ai</strong>. Environment variables can be
+          Connected to Instagram <strong>@getcashwithai</strong>. Environment variables can be
           configured even when an external provider has failed; use Health Check and the latest
           run details to confirm the pipeline is actually operating.
         </p>

@@ -76,7 +76,7 @@ export async function GET(request) {
       headline: content.storyText || content.hook,
       body: "Open the post · Comment HOW",
       label: dayNumber ? `DAY ${dayNumber}` : "NEW TIP",
-      footer: "Follow @unlocking__ai",
+      footer: "Follow @getcashwithai",
       width: 1080,
       height: 1920,
     });
