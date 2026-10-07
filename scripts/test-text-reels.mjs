@@ -15,6 +15,8 @@ for (let i = 0; i < DAILY_REEL_LESSON_COUNT; i++) {
   assert.ok(lesson.hook.length > 6);
   assert.ok(lesson.caption.length < 2200);
   assert.equal(lesson.beats.length, 5);
+  assert.match(lesson.caption, /@getcashwithai\b/);
+  assert.doesNotMatch(`${lesson.caption}\n${lesson.firstComment || ""}`, /unlocking[_.]*ai/i);
   hooks.add(lesson.hook);
   for (let b = 0; b < lesson.beats.length; b++) {
     const jpeg = await renderReelFrame({
