@@ -4,6 +4,9 @@ import { loadGrowthHistory, summarizeGrowth, buildGrowthRecommendations } from "
 import { loadPipelineStatuses, pipelineFailureWarning } from "@/lib/pipeline-status";
 
 export const dynamic = "force-dynamic";
+// force-dynamic alone does not opt GET fetches out of Next 14's Data Cache, so
+// Airtable and pipeline-status reads were served from a stale cached copy.
+export const fetchCache = "force-no-store";
 
 export async function GET() {
   const tipDay = await getTipDayNumber();
