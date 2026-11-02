@@ -6,13 +6,13 @@ A faceless Instagram growth engine that runs itself. It researches winning ideas
 
 1. **Researcher** (Mondays) — pulls your Apify scrape, scores posts for growth (comments + video/carousel bias), saves winners to Airtable  
 2. **Copywriter + Designer** (daily) — Claude writes growth-optimized feed copy; Gemini makes the graphic; queues a first-comment CTA  
-3. **Reel studio** (daily) — Claude writes an 8s Reel script; Gemini makes the cover; **Veo** renders a 9:16 video  
+3. **Reel studio** (daily) — Claude writes an 8s Reel script; Gemini makes the cover; **Gemini Omni Flash** renders a 9:16 video  
 4. **Carousel studio** (Tue/Thu/Sat) — multi-slide “save this” posts  
 5. **Poster** (daily) — feed/carousel ~3pm UTC; **Reels once a day** ~6pm UTC via Meta’s official API + auto first comment  
 
 Everything runs on Vercel crons.
 
-**Cost note:** Apify + Claude + Gemini images are cheap. **Veo Reels need a paid Gemini key** and cost more per video — expect higher monthly spend if you keep daily Reels on.
+**Cost note:** Apify + Claude + Gemini images are cheap. **Gemini Omni video Reels need a paid Gemini key** and cost more per video — expect higher monthly spend if you keep daily Reels on.
 
 ---
 
@@ -66,7 +66,7 @@ curl -H "Authorization: Bearer YOUR_CRON_SECRET" https://your-app.vercel.app/api
 | Feature | Why it helps | Schedule |
 |--------|----------------|----------|
 | **3 text Reels / day** | Reels are almost the only way non-followers see you | Generate 11:00 · Post 13:00 / 17:00 / 00:00 UTC |
-| **Veo fallback** | Never skip a day if video gen fails | Auto → carousel same day |
+| **Video fallback** | Never skip a day if video gen fails | Auto → carousel same day |
 | **Optional Day N label** | Keeps continuity without weakening the main hook | Tiny metadata only |
 | **TIP comment replies** | Makes engagement CTA real → more comments | 19:00 & 21:00 UTC |
 | **Stories after each post** | Extra profile visits same day | Auto after feed + reel publish |
@@ -80,10 +80,10 @@ curl -H "Authorization: Bearer YOUR_CRON_SECRET" https://your-app.vercel.app/api
 
 Tune voice/prompts in `lib/growth.js`.
 
-Optional env: `VEO_MODEL` (default `veo-3.1-fast-generate-preview`).
+Optional env: `VIDEO_MODEL` (default `gemini-omni-1.1-flash`).
 Current model fallbacks are `gemini-3.5-flash-lite` → `gemini-2.5-flash` →
 `gemini-2.5-flash-lite` for text, `gemini-3.1-flash-image` →
-`gemini-2.5-flash-image` for images, and Veo 3.1 fast → standard for video.
+`gemini-2.5-flash-image` for images, and `gemini-omni-1.1-flash` for video.
 
 If all text providers are temporarily unavailable, the daily generators queue
 a schema-compatible notes-only prompt. If all image models are rate-limited,
@@ -97,7 +97,7 @@ After deploying a fix:
 1. Open the dashboard and run **Health Check**. Confirm the Instagram token is
    valid and review the latest generation/publishing error.
 2. Click **Trigger Generate** and wait for a new item under **Ready to Post**.
-   Use **Generate Reel** when you specifically want the Reel/Veo path.
+   Use **Generate Reel** when you specifically want the video path.
 3. Review the queued caption and fallback warning, if present.
 4. Click **Post Reel**. That route publishes a Reel first, then safely falls
    back to a Ready carousel or feed item.
